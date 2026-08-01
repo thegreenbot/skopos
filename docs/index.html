@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>skopos — Observe. Reason. Deliver.</title>
+<meta name="description" content="skopos: one global install that enhances whatever AI CLI you use. Author skills, agents, and instructions once — project them into Claude Code, Copilot CLI, and beyond.">
+<meta property="og:title" content="skopos — Observe. Reason. Deliver.">
+<meta property="og:description" content="One global install that enhances whatever AI CLI you use. Your files stay yours; skopos owns only its fence.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%2300e5ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%237c4dff'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2305060f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Sora:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#05060f; --bg2:#0b0d1f; --ink:#e8eaff; --dim:#8b90b8;
+    --cyan:#00e5ff; --magenta:#ff2ec4; --violet:#7c4dff; --gold:#ffd54a;
+    --card:#0d1024; --line:#23264a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font:400 17px/1.65 "Sora",sans-serif;overflow-x:hidden}
+  ::selection{background:var(--magenta);color:#000}
+
+  /* starfield + nebula */
+  #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .nebula{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(60vw 40vh at 80% -10%, rgba(124,77,255,.20), transparent 60%),
+      radial-gradient(50vw 45vh at 10% 30%, rgba(0,229,255,.10), transparent 60%),
+      radial-gradient(70vw 50vh at 60% 110%, rgba(255,46,196,.12), transparent 60%);}
+  main{position:relative;z-index:1}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* ---------- typography ---------- */
+  .display{font-family:"Anton",sans-serif;text-transform:uppercase;letter-spacing:.01em;
+    transform:skewX(-6deg);line-height:.95}
+  h2.display{font-size:clamp(2.4rem,6vw,4.2rem);margin-bottom:.5em;
+    background:linear-gradient(100deg,var(--cyan) 10%,var(--magenta) 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 18px rgba(0,229,255,.25))}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-size:.78rem;letter-spacing:.35em;
+    text-transform:uppercase;color:var(--cyan);margin-bottom:1.2em}
+  p.lead{font-size:1.2rem;color:var(--dim);max-width:46ch}
+
+  /* slam-in reveal */
+  .reveal{opacity:0;transform:translateY(50px) skewX(-6deg) scale(1.12);transform-origin:left bottom}
+  .reveal.in{opacity:1;transform:translateY(0) skewX(-6deg) scale(1);
+    transition:transform .55s cubic-bezier(.16,1.5,.3,1),opacity .3s ease}
+  .reveal-soft{opacity:0;transform:translateY(28px)}
+  .reveal-soft.in{opacity:1;transform:none;transition:transform .7s cubic-bezier(.2,1,.3,1),opacity .5s ease}
+  @media (prefers-reduced-motion:reduce){
+    .reveal,.reveal-soft{opacity:1 !important;transform:skewX(-6deg) !important;transition:none}
+    .reveal-soft{transform:none !important}
+    .iris,.ring,.hero-letter{animation:none !important}
+  }
+
+  /* ---------- hero ---------- */
+  header{min-height:100svh;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .eye{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:min(120vw,1100px);opacity:.9;pointer-events:none}
+  .ring{transform-origin:center;animation:spin 60s linear infinite}
+  .ring.r2{animation-duration:90s;animation-direction:reverse}
+  .ring.r3{animation-duration:140s}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .iris{animation:pulse 5s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.85}50%{opacity:1}}
+  .hero-inner{position:relative;text-align:center;padding:0 16px}
+  h1.display{font-size:clamp(4.5rem,17vw,13rem);color:var(--ink);
+    text-shadow:0 0 40px rgba(0,229,255,.45),0 0 90px rgba(255,46,196,.25)}
+  .hero-letter{display:inline-block;opacity:0;transform:translateY(.6em) scale(1.4) rotate(4deg);
+    animation:slam .5s cubic-bezier(.16,1.6,.3,1) forwards}
+  @keyframes slam{to{opacity:1;transform:none}}
+  .tag{font-family:"Anton",sans-serif;font-size:clamp(1.1rem,3.4vw,2rem);letter-spacing:.18em;
+    text-transform:uppercase;transform:skewX(-6deg);margin-top:.6em}
+  .tag b{color:var(--cyan)} .tag i{color:var(--magenta);font-style:normal} .tag u{color:var(--gold);text-decoration:none}
+  .hero-sub{color:var(--dim);max-width:52ch;margin:1.6em auto 2.2em}
+  .cta{display:inline-block;font-family:"Anton",sans-serif;text-transform:uppercase;letter-spacing:.08em;
+    font-size:1.05rem;color:#000;background:linear-gradient(100deg,var(--cyan),var(--magenta));
+    padding:.85em 2.2em;transform:skewX(-6deg);text-decoration:none;
+    box-shadow:0 0 24px rgba(0,229,255,.5)}
+  .cta span{display:inline-block;transform:skewX(6deg)}
+  .cta:hover{box-shadow:0 0 44px rgba(255,46,196,.7)}
+  .cta:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+
+  /* ---------- sections ---------- */
+  section{padding:110px 0;position:relative}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:44px}
+  .card{background:var(--card);border:1px solid var(--line);padding:30px 26px;position:relative}
+  .card::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--accent,var(--cyan));
+    box-shadow:0 0 14px var(--accent,var(--cyan))}
+  .card h3{font-family:"Anton",sans-serif;text-transform:uppercase;font-size:1.5rem;letter-spacing:.03em;
+    transform:skewX(-6deg);color:var(--accent,var(--cyan));margin-bottom:.5em}
+  .card p{color:var(--dim);font-size:.98rem}
+  .card .step{font-family:"JetBrains Mono",monospace;color:var(--dim);font-size:.75rem;letter-spacing:.3em}
+
+  /* roster */
+  .roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-top:44px}
+  .agent{border:1px solid var(--line);background:linear-gradient(180deg,var(--card),#090b1c);padding:24px 18px;
+    text-align:center;transition:transform .25s ease,box-shadow .25s ease}
+  .agent:hover{transform:translateY(-6px);box-shadow:0 12px 34px rgba(0,229,255,.15)}
+  .agent svg{width:54px;height:54px;margin-bottom:12px}
+  .agent h3{font-family:"Anton",sans-serif;font-size:1.25rem;text-transform:uppercase;transform:skewX(-6deg)}
+  .tier{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.2em;
+    padding:.25em .8em;margin:.7em 0;border:1px solid}
+  .tier.fast{color:var(--cyan);border-color:var(--cyan)}
+  .tier.smart{color:var(--magenta);border-color:var(--magenta)}
+  .agent p{font-size:.85rem;color:var(--dim)}
+
+  /* fence diagram */
+  .fencebox{margin-top:44px;font-family:"JetBrains Mono",monospace;font-size:.85rem;line-height:1.9;
+    border:1px solid var(--line);background:#080a18;padding:28px;overflow-x:auto;white-space:pre}
+  .fencebox .you{color:var(--ink)} .fencebox .managed{color:var(--cyan)} .fencebox .facts{color:var(--gold)}
+  .fencebox .cm{color:#4a4f7a}
+  .legend{display:flex;gap:28px;flex-wrap:wrap;margin-top:20px;font-size:.85rem;color:var(--dim)}
+  .dot{display:inline-block;width:10px;height:10px;margin-right:8px;border-radius:50%}
+
+  /* projection diagram */
+  .proj{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;margin-top:44px}
+  .proj .src{border:1px solid var(--violet);background:var(--card);padding:24px;
+    box-shadow:0 0 24px rgba(124,77,255,.18)}
+  .proj .src h4,.tool h4{font-family:"Anton",sans-serif;text-transform:uppercase;letter-spacing:.04em;
+    transform:skewX(-6deg);font-size:1.15rem;margin-bottom:.4em}
+  .proj .src h4{color:var(--violet)}
+  .proj .src p,.tool p{font-size:.85rem;color:var(--dim)}
+  .proj .arrows{font-family:"JetBrains Mono",monospace;color:var(--cyan);font-size:1.6rem;
+    display:flex;flex-direction:column;gap:26px;text-shadow:0 0 12px rgba(0,229,255,.8)}
+  .proj .tools{display:flex;flex-direction:column;gap:18px}
+  .tool{border:1px solid var(--line);background:var(--card);padding:18px 22px}
+  .tool.claude h4{color:var(--cyan)} .tool.copilot h4{color:var(--magenta)} .tool.next h4{color:var(--gold)}
+  .tool code{font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--dim)}
+  @media (max-width:720px){.proj{grid-template-columns:1fr}.proj .arrows{flex-direction:row;justify-content:center}
+    .proj .arrows span{transform:rotate(90deg)}}
+
+  /* quick start */
+  .term{margin-top:44px;background:#02030a;border:1px solid var(--line);padding:30px;
+    font-family:"JetBrains Mono",monospace;font-size:.95rem;line-height:2.1;overflow-x:auto;
+    white-space:pre;box-shadow:0 0 40px rgba(124,77,255,.12) inset}
+  .term .p{color:var(--magenta)} .term .c{color:var(--ink)} .term .o{color:#565b8a}
+
+  footer{border-top:1px solid var(--line);padding:48px 0;color:var(--dim);font-size:.9rem;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  footer a{color:var(--cyan);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="nebula"></div>
+<main>
+<header>
+  <svg class="eye" viewBox="0 0 1000 600" aria-hidden="true">
+    <defs>
+      <radialGradient id="irisg" cx="50%" cy="50%">
+        <stop offset="0%" stop-color="#fff"/>
+        <stop offset="18%" stop-color="#00e5ff"/>
+        <stop offset="55%" stop-color="#7c4dff"/>
+        <stop offset="100%" stop-color="#05060f"/>
+      </radialGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <g class="ring r3" style="opacity:.25"><circle cx="500" cy="300" r="290" fill="none" stroke="#7c4dff" stroke-width="1.5" stroke-dasharray="2 14"/></g>
+    <g class="ring r2" style="opacity:.4"><circle cx="500" cy="300" r="240" fill="none" stroke="#ff2ec4" stroke-width="1" stroke-dasharray="60 22"/></g>
+    <g class="ring" style="opacity:.5"><circle cx="500" cy="300" r="196" fill="none" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="120 40"/></g>
+    <ellipse cx="500" cy="300" rx="176" ry="176" fill="none" stroke="#23264a" stroke-width="1"/>
+    <circle class="iris" cx="500" cy="300" r="120" fill="url(#irisg)" filter="url(#glow)"/>
+    <circle cx="500" cy="300" r="34" fill="#02030a"/>
+    <circle cx="474" cy="272" r="12" fill="#e8eaff" opacity=".9"/>
+  </svg>
+  <div class="hero-inner">
+    <div class="eyebrow">σκοπός · the one who watches</div>
+    <h1 class="display" id="hero-title" aria-label="SKOPOS">SKOPOS</h1>
+    <div class="tag"><b>Observe.</b> <i>Reason.</i> <u>Deliver.</u></div>
+    <p class="hero-sub">One global install that enhances whatever AI CLI you use.
+      Author your skills, agents, and instructions once — skopos projects them into
+      Claude Code, Copilot CLI, and whatever watches next.</p>
+    <a class="cta" href="https://github.com/thegreenbot/skopos"><span>Begin the vigil →</span></a>
+  </div>
+</header>
+
+<section class="wrap">
+  <div class="eyebrow reveal-soft">the doctrine</div>
+  <h2 class="display reveal">Observe. Reason.<br>Deliver.</h2>
+  <p class="lead reveal-soft">The main session wears the Skopos persona: a gatekeeper that never
+    burns context on grunt work and never delegates judgement.</p>
+  <div class="grid3">
+    <div class="card reveal-soft" style="--accent:var(--cyan)">
+      <div class="step">/01</div><h3>Observe</h3>
+      <p>Scouts fan out — one per relevant repo, in parallel, each with a single targeted
+        question. Heavy reading happens out there, not in your context window.</p>
+    </div>
+    <div class="card reveal-soft" style="--accent:var(--magenta)">
+      <div class="step">/02</div><h3>Reason</h3>
+      <p>Synthesis, trade-offs, and decisions stay in the main session. Judgement is
+        never outsourced to a subagent.</p>
+    </div>
+    <div class="card reveal-soft" style="--accent:var(--gold)">
+      <div class="step">/03</div><h3>Deliver</h3>
+      <p>The narrowest specialist that can do the job gets a five-line brief and returns
+        a compressed report. No transcript recaps, ever.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="eyebrow reveal-soft">the roster</div>
+  <h2 class="display reveal">Five specialists.<br>Zero fluff.</h2>
+  <div class="roster">
+    <div class="agent reveal-soft">
+      <svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="14" fill="none" stroke="#00e5ff" stroke-width="2"/><circle cx="27" cy="27" r="5" fill="#00e5ff"/><line x1="27" y1="4" x2="27" y2="13" stroke="#00e5ff" stroke-width="2"/><line x1="27" y1="41" x2="27" y2="50" stroke="#00e5ff" stroke-width="2"/><line x1="4" y1="27" x2="13" y2="27" stroke="#00e5ff" stroke-width="2"/><line x1="41" y1="27" x2="50" y2="27" stroke="#00e5ff" stroke-width="2"/></svg>
+      <h3>Scout</h3><span class="tier fast">fast</span>
+      <p>Read-only interrogation. One repo, one question, file:line evidence.</p>
+    </div>
+    <div class="agent reveal-soft">
+      <svg viewBox="0 0 54 54"><path d="M8 44 L8 22 L20 22 L20 34 L32 34 L32 12 L46 12" fill="none" stroke="#ff2ec4" stroke-width="2"/><circle cx="46" cy="12" r="4" fill="#ff2ec4"/></svg>
+      <h3>Planner</h3><span class="tier smart">smart</span>
+      <p>Requirements → phased plan with concrete paths. Never writes code.</p>
+    </div>
+    <div class="agent reveal-soft">
+      <svg viewBox="0 0 54 54"><path d="M14 14 L6 27 L14 40 M40 14 L48 27 L40 40" fill="none" stroke="#00e5ff" stroke-width="2"/><line x1="31" y1="10" x2="23" y2="44" stroke="#00e5ff" stroke-width="2"/></svg>
+      <h3>Implementer</h3><span class="tier fast">fast</span>
+      <p>One scoped step, smallest diff, verification run before it reports done.</p>
+    </div>
+    <div class="agent reveal-soft">
+      <svg viewBox="0 0 54 54"><circle cx="22" cy="22" r="12" fill="none" stroke="#ff2ec4" stroke-width="2"/><line x1="31" y1="31" x2="46" y2="46" stroke="#ff2ec4" stroke-width="3"/></svg>
+      <h3>Reviewer</h3><span class="tier smart">smart</span>
+      <p>Diff review: ranked findings, each anchored file:line. Silence beats noise.</p>
+    </div>
+    <div class="agent reveal-soft">
+      <svg viewBox="0 0 54 54"><path d="M27 5 L45 12 L45 26 C45 38 37 46 27 50 C17 46 9 38 9 26 L9 12 Z" fill="none" stroke="#ffd54a" stroke-width="2"/><circle cx="27" cy="27" r="6" fill="#ffd54a"/></svg>
+      <h3>Sentinel</h3><span class="tier smart">smart</span>
+      <p>Security passes over trust boundaries. Evidence or silence.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="eyebrow reveal-soft">universal-first</div>
+  <h2 class="display reveal">Author once.<br>Project everywhere.</h2>
+  <p class="lead reveal-soft">Content lives in one universal form — skills to the Agent Skills
+    standard in <code>~/.agents/skills</code>, agents as plain markdown with tiered models.
+    Thin adapters (~one file per tool) translate frontmatter and paths. Nothing else.</p>
+  <div class="proj">
+    <div class="src reveal-soft">
+      <h4>One source of truth</h4>
+      <p>your catalog + your enterprise's approved sources<br>
+        <code style="font-family:'JetBrains Mono',monospace;font-size:.78rem">skills/ · agents/ · instructions/</code></p>
+    </div>
+    <div class="arrows reveal-soft" aria-hidden="true"><span>─▶</span><span>─▶</span><span>─▶</span></div>
+    <div class="tools">
+      <div class="tool claude reveal-soft"><h4>Claude Code</h4>
+        <code>~/.claude/agents/*.md · CLAUDE.md fence</code></div>
+      <div class="tool copilot reveal-soft"><h4>Copilot CLI</h4>
+        <code>~/.copilot/agents/*.agent.md · copilot-instructions.md fence</code></div>
+      <div class="tool next reveal-soft"><h4>Whatever's next</h4>
+        <code>one adapter file + one registry entry</code></div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="eyebrow reveal-soft">inverted ownership</div>
+  <h2 class="display reveal">Your files<br>stay yours.</h2>
+  <p class="lead reveal-soft">engsys owned the file and fenced you in. Skopos inverts it:
+    you own <code>~/.claude/CLAUDE.md</code> — skopos owns only one fenced block inside it.</p>
+  <div class="fencebox reveal-soft">
+<span class="you"># My CLAUDE.md — mine, untouched, forever</span>
+<span class="you">my own rules, my own notes…</span>
+
+<span class="managed">&lt;!-- SKOPOS:MANAGED:START --&gt;</span>
+<span class="managed">  persona · tone · repo registry · roster    <span class="cm">← regenerated by `skopos update`</span></span>
+<span class="facts">  &lt;!-- SKOPOS:USER-FACTS:START --&gt;</span>
+<span class="facts">  your durable facts — survive every update   <span class="cm">← yours, never drift</span></span>
+<span class="facts">  &lt;!-- SKOPOS:USER-FACTS:END --&gt;</span>
+<span class="managed">&lt;!-- SKOPOS:MANAGED:END --&gt;</span>
+  </div>
+  <div class="legend reveal-soft">
+    <span><span class="dot" style="background:var(--ink)"></span>yours — never touched</span>
+    <span><span class="dot" style="background:var(--cyan)"></span>managed — hash-verified, drift → exit 2</span>
+    <span><span class="dot" style="background:var(--gold)"></span>user facts — preserved through every regen</span>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="eyebrow reveal-soft">for the org</div>
+  <h2 class="display reveal">Enterprise-grade<br>vigilance.</h2>
+  <p class="lead reveal-soft">Fork the repo, ship a <code>config.defaults.json</code> listing your
+    approved-content sources, and a new hire is productive in minutes.</p>
+  <div class="grid3">
+    <div class="card reveal-soft" style="--accent:var(--violet)">
+      <div class="step">SHA-PINNED</div><h3>Sources</h3>
+      <p>Approved-content repos are shallow-cloned and pinned by commit SHA in the lock.
+        <code>skopos status</code> shows exactly what's deployed.</p>
+    </div>
+    <div class="card reveal-soft" style="--accent:var(--cyan)">
+      <div class="step">OFFLINE-SAFE</div><h3>Deterministic</h3>
+      <p><code>sources sync</code> touches the network; <code>update</code> never does.
+        A failed sync keeps the prior checkout and warns.</p>
+    </div>
+    <div class="card reveal-soft" style="--accent:var(--magenta)">
+      <div class="step">EXIT 2</div><h3>Drift detection</h3>
+      <p><code>skopos verify</code> hashes every managed file — and only the fenced block
+        of files you own. Your edits are never "drift".</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="eyebrow reveal-soft">summon it</div>
+  <h2 class="display reveal">Three commands<br>to first light.</h2>
+  <div class="term reveal-soft">
+<span class="p">$</span> <span class="c">git clone https://github.com/thegreenbot/skopos && cd skopos</span>
+<span class="p">$</span> <span class="c">./skopos install</span>
+<span class="o"># open your AI tool → run the skopos-setup interview</span>
+<span class="p">$</span> <span class="c">./skopos update</span>
+<span class="o"># restart your session. The vigil begins.</span>
+  </div>
+</section>
+
+<footer class="wrap">
+  <span>skopos · MIT · zero dependencies · Node ≥ 18</span>
+  <a href="https://github.com/thegreenbot/skopos">github.com/thegreenbot/skopos</a>
+</footer>
+</main>
+
+<script>
+// starfield
+const cv=document.getElementById('stars'),cx=cv.getContext('2d');let stars=[];
+function size(){cv.width=innerWidth;cv.height=innerHeight;
+  stars=Array.from({length:140},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,
+    r:Math.random()*1.4+.2,s:Math.random()*.25+.05,tw:Math.random()*Math.PI*2}));}
+size();addEventListener('resize',size);
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+(function draw(t){cx.clearRect(0,0,cv.width,cv.height);
+  for(const s of stars){s.y=(s.y+s.s)%cv.height;
+    const a=.4+.6*Math.abs(Math.sin(t/1600+s.tw));
+    cx.fillStyle=`rgba(232,234,255,${a})`;cx.fillRect(s.x,s.y,s.r,s.r);}
+  if(!reduced)requestAnimationFrame(draw);})(0);
+
+// hero letters
+const h1=document.getElementById('hero-title');
+h1.innerHTML=[...'SKOPOS'].map((ch,i)=>`<span class="hero-letter" style="animation-delay:${.08*i+.2}s">${ch}</span>`).join('');
+
+// scroll reveals
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.25});
+document.querySelectorAll('.reveal,.reveal-soft').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
