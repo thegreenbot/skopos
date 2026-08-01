@@ -1,0 +1,11 @@
+{
+  "name": "skopos",
+  "version": "0.1.0",
+  "description": "Observe. Reason. Deliver. One global install that enhances whatever AI CLI is in use.",
+  "license": "MIT",
+  "bin": { "skopos": "./skopos" },
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

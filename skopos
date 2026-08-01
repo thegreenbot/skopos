@@ -1,0 +1,208 @@
+#!/usr/bin/env node
+'use strict';
+
+// skopos — Observe. Reason. Deliver.
+// One global install that enhances whatever AI CLI is in use.
+//
+// Deterministic plumbing only: the CLI renders everything from
+// ~/.skopos/config.json; judgement (identity, tone, repo registry) is gathered
+// by the skopos-setup interview skill, which writes that config.
+
+const path = require('path');
+const {
+  SKOPOS_VERSION, runInstall, runVerify, runUninstall, runStatus, runSourcesSync,
+} = require('./lib/commands');
+const configLib = require('./lib/config');
+const { resolveEnv, exists, readText, safeJson } = require('./lib/util');
+const lockLib = require('./lib/lock');
+
+const skoposRoot = __dirname;
+
+function parseArgs(argv) {
+  const args = { _: [] };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--dry-run') args.dryRun = true;
+    else if (a === '--force') args.force = true;
+    else if (a === '--target') args.target = argv[++i];
+    else if (a === '--help' || a === '-h') args.help = true;
+    else args._.push(a);
+  }
+  return args;
+}
+
+const USAGE = `skopos ${SKOPOS_VERSION} — Observe. Reason. Deliver.
+
+One global install that enhances whatever AI CLI is in use. Content is authored
+once (Agent Skills standard, ~/.agents/skills); thin per-tool adapters project
+instructions and agents into each tool.
+
+Commands:
+  install   [--dry-run] [--force] [--target claude|copilot|all]
+      Install/refresh everything. --target enables a surface and persists it
+      into config (a later bare \`update\` keeps it). First run with no config
+      detects installed tools.
+  update    [--dry-run]
+      Re-render from current config + synced sources. Targets always come from
+      config. Preserves the SKOPOS:USER-FACTS fence; prunes deselected content.
+  verify
+      Check installed files against the lock. Exit 2 on drift. For files skopos
+      only holds a fenced block in, only the block content is checked.
+  status
+      Version, targets, sources + pinned SHAs, content counts, drift, and any
+      pre-existing (user-owned) agents skopos leaves untouched.
+  uninstall [--dry-run]
+      Remove managed files, strip SKOPOS:MANAGED fences, restore snapshots.
+      Your config.json survives.
+  sources sync | sources list
+      Sync enterprise/approved-content sources (git) and pin SHAs, or list them.
+  config validate
+      Validate ~/.skopos/config.json (after enterprise-defaults merge).
+
+First run: ./skopos install, then open your AI tool and run the skopos-setup
+interview, then ./skopos update.`;
+
+function say(lines) { console.log(lines.filter((l) => l !== null).join('\n')); }
+function fail(msg) { console.error(`error: ${msg}`); process.exit(1); }
+
+function reportInstall(r, cmd) {
+  const tag = r.dryRun ? ' (dry run — nothing written)' : '';
+  const lines = [`skopos ${r.mode}${tag}`];
+  if (r.detected.length) lines.push(`  detected tools → targets enabled: ${r.detected.join(', ')} (persisted to config)`);
+  lines.push(`  targets:  ${r.targets.join(', ') || 'none'}`);
+  lines.push(`  skills:   ${r.skills.length} → ~/.agents/skills (${r.skills.join(', ') || '-'})`);
+  lines.push(`  agents:   ${r.agents.length} per target (${r.agents.join(', ') || '-'})`);
+  const c = r.changes;
+  lines.push(`  files:    ${r.managedCount} managed (${c.added} new, ${c.updated} updated, ${c.removed} pruned), ${r.fenced.length} fenced block(s), ${r.links.length} compat link(s)`);
+  if (r.snapshotted.length) lines.push(`  rollback: ${r.snapshotted.length} pre-existing file(s) snapshotted — \`skopos uninstall\` restores them.`);
+  if (r.preexisting.length) {
+    lines.push(`  preserved (your own, untouched): ${r.preexisting.join(', ')}`);
+  }
+  if (!r.personalized) {
+    lines.push('');
+    lines.push('  Not yet personalized — open your AI tool, run the skopos-setup interview,');
+    lines.push('  then run `skopos update`.');
+  }
+  if (r.warnings.length) {
+    lines.push('', 'Warnings:');
+    for (const w of r.warnings) lines.push(`  ! ${w}`);
+  }
+  say(lines);
+}
+
+function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const cmd = args._[0];
+  if (args.help || !cmd) { console.log(USAGE); process.exit(args.help ? 0 : 1); }
+  const env = resolveEnv();
+
+  try {
+    if (cmd === 'install' || cmd === 'update') {
+      if (cmd === 'update' && args.target) fail('update takes no --target — targets always come from config (use `skopos install --target …` to enable a new surface).');
+      const r = runInstall({ skoposRoot, env, dryRun: args.dryRun, force: args.force, target: args.target, mode: cmd });
+      reportInstall(r, cmd);
+      process.exit(0);
+    }
+
+    if (cmd === 'verify') {
+      const r = runVerify({ env });
+      if (r.ok) {
+        const n = Object.keys(r.lock.managed || {}).length;
+        const f = Object.keys(r.lock.fenced || {}).length;
+        console.log(`verify: OK — ${n} managed file(s) + ${f} fenced block(s) match (skopos ${r.lock.skoposVersion}).`);
+        process.exit(0);
+      }
+      console.log(`verify: DRIFT detected (skopos ${r.lock.skoposVersion}).`);
+      for (const m of r.missing) console.log(`  missing:  ${m}`);
+      for (const m of r.modified) console.log(`  modified: ${m}`);
+      process.exit(2);
+    }
+
+    if (cmd === 'status') {
+      const s = runStatus({ env, skoposRoot });
+      const lines = [
+        `skopos ${s.skoposVersion}`,
+        `  installed: ${s.installed ? `yes (lock: skopos ${s.lock.skoposVersion})` : 'no'}`,
+        `  config:    ${s.configExists ? configLib.configPath(env) : 'not written yet (run the skopos-setup interview)'}`,
+        `  targets:   ${s.targets.join(', ') || 'none'}`,
+        `  skills:    ${s.skills.join(', ') || 'none'}`,
+        `  agents:    ${s.agents.join(', ') || 'none'}`,
+      ];
+      const srcs = Object.entries((s.lock && s.lock.sources) || {});
+      lines.push(`  sources:   ${srcs.length ? '' : 'none'}`);
+      for (const [name, p] of srcs) lines.push(`    ${name} @ ${p.sha ? p.sha.slice(0, 12) : '?'} (${p.url})`);
+      if (s.drift) {
+        lines.push(`  drift:     ${s.drift.ok ? 'none' : `${s.drift.missing.length} missing, ${s.drift.modified.length} modified — run \`skopos verify\``}`);
+      }
+      if (s.preexisting.length) lines.push(`  preserved (your own): ${s.preexisting.join(', ')}`);
+      if (s.warnings.length) { lines.push('  warnings:'); for (const w of s.warnings) lines.push(`    ! ${w}`); }
+      say(lines);
+      process.exit(0);
+    }
+
+    if (cmd === 'uninstall') {
+      const r = runUninstall({ env, dryRun: args.dryRun });
+      const tag = r.dryRun ? ' (dry run — nothing written)' : '';
+      say([
+        `skopos uninstall${tag}`,
+        `  removed ${r.removed.length} file(s)/link(s), stripped ${r.stripped.length} fence(s), restored ${r.restored.length} original(s).`,
+        '  Your config.json was left in place.',
+      ]);
+      process.exit(0);
+    }
+
+    if (cmd === 'sources') {
+      const sub = args._[1];
+      if (sub === 'sync') {
+        const r = runSourcesSync({ env, skoposRoot });
+        const lines = ['skopos sources sync'];
+        if (!r.results.length) lines.push('  no sources configured.');
+        for (const s of r.results) {
+          if (s.error) lines.push(`  ! ${s.name}: ${s.error}${s.sha ? ` (kept prior checkout @ ${s.sha.slice(0, 12)})` : ''}`);
+          else lines.push(`  ${s.name} @ ${s.sha.slice(0, 12)} (${s.url})`);
+        }
+        for (const p of r.prunedDirs) lines.push(`  pruned stale checkout: ${p}`);
+        lines.push('', '  Run `skopos update` to install synced content.');
+        say(lines);
+        process.exit(r.results.some((s) => s.error) ? 1 : 0);
+      }
+      if (sub === 'list') {
+        const loaded = configLib.loadConfig(env, skoposRoot);
+        const lock = lockLib.readLock(env);
+        const pins = (lock && lock.sources) || {};
+        const lines = ['configured sources (config order = precedence, highest first):'];
+        if (!(loaded.config.sources || []).length) lines.push('  none');
+        for (const s of loaded.config.sources || []) {
+          const pin = pins[s.name];
+          lines.push(`  ${s.name}  ${s.url}  ref=${s.ref || 'HEAD'}  ${pin ? `pinned @ ${pin.sha.slice(0, 12)}` : 'not synced'}`);
+        }
+        say(lines);
+        process.exit(0);
+      }
+      fail('usage: skopos sources sync|list');
+    }
+
+    if (cmd === 'config') {
+      if (args._[1] === 'validate') {
+        const loaded = configLib.loadConfig(env, skoposRoot);
+        const errors = configLib.validateConfig(loaded.config).concat(loaded.problems);
+        if (!errors.length) {
+          console.log(`config: OK (${loaded.existed ? configLib.configPath(env) : 'no user config yet — defaults only'})`);
+          process.exit(0);
+        }
+        console.log('config: INVALID');
+        for (const e of errors) console.log(`  - ${e}`);
+        process.exit(1);
+      }
+      fail('usage: skopos config validate');
+    }
+
+    console.error(`unknown command: ${cmd}\n`);
+    console.log(USAGE);
+    process.exit(1);
+  } catch (e) {
+    fail(e.message);
+  }
+}
+
+main();
