@@ -116,6 +116,31 @@
   .legend{display:flex;gap:28px;flex-wrap:wrap;margin-top:20px;font-size:.85rem;color:var(--dim)}
   .dot{display:inline-block;width:10px;height:10px;margin-right:8px;border-radius:50%}
 
+  /* delivery loop */
+  .loop{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:44px}
+  .stage{border:1px solid var(--line);background:var(--card);padding:22px 18px;position:relative}
+  .stage::after{content:"→";position:absolute;right:-13px;top:50%;transform:translateY(-50%);
+    color:var(--cyan);font-family:"JetBrains Mono",monospace;z-index:2;text-shadow:0 0 10px rgba(0,229,255,.8)}
+  .stage:last-child::after{content:""}
+  .stage .n{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.28em;color:var(--dim)}
+  .stage h3{font-family:"Anton",sans-serif;text-transform:uppercase;font-size:1.15rem;letter-spacing:.03em;
+    transform:skewX(-6deg);color:var(--accent,var(--cyan));margin:.35em 0 .3em}
+  .stage code{display:block;font-family:"JetBrains Mono",monospace;font-size:.7rem;color:var(--violet);
+    margin-bottom:.7em;word-break:break-all}
+  .stage p{font-size:.85rem;color:var(--dim)}
+  @media (max-width:760px){.stage::after{content:"↓";right:auto;left:50%;top:auto;bottom:-15px;transform:translateX(-50%)}}
+
+  .ledger{margin-top:26px;border:1px solid var(--gold);background:linear-gradient(100deg,rgba(255,213,74,.07),transparent 60%);
+    padding:26px 28px;box-shadow:0 0 30px rgba(255,213,74,.10)}
+  .ledger h3{font-family:"Anton",sans-serif;text-transform:uppercase;font-size:1.3rem;letter-spacing:.03em;
+    transform:skewX(-6deg);color:var(--gold);margin-bottom:.5em}
+  .ledger p{color:var(--dim);font-size:.95rem;max-width:62ch}
+  .ledger .grades{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;font-family:"JetBrains Mono",monospace;font-size:.72rem}
+  .ledger .grades span{border:1px solid;padding:.3em .9em;letter-spacing:.16em}
+  .g-held{color:var(--cyan);border-color:var(--cyan)}
+  .g-broke{color:var(--magenta);border-color:var(--magenta)}
+  .g-untested{color:var(--gold);border-color:var(--gold)}
+
   /* projection diagram */
   .proj{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;margin-top:44px}
   .proj .src{border:1px solid var(--violet);background:var(--card);padding:24px;
@@ -231,6 +256,53 @@
       <svg viewBox="0 0 54 54"><path d="M27 5 L45 12 L45 26 C45 38 37 46 27 50 C17 46 9 38 9 26 L9 12 Z" fill="none" stroke="#ffd54a" stroke-width="2"/><circle cx="27" cy="27" r="6" fill="#ffd54a"/></svg>
       <h3>Sentinel</h3><span class="tier smart">smart</span>
       <p>Security passes over trust boundaries. Evidence or silence.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="eyebrow reveal-soft">the delivery loop</div>
+  <h2 class="display reveal">The last 10%<br>is an assumption.</h2>
+  <p class="lead reveal-soft">Agentic delivery reaches 90% in one shot and stalls — almost never
+    because the code was wrong, but because something was assumed and never checked. Skopos
+    treats assumptions as the deliverable.</p>
+  <div class="loop">
+    <div class="stage reveal-soft" style="--accent:var(--cyan)">
+      <div class="n">STAGE 1</div><h3>Discover</h3><code>feature-interview</code>
+      <p>One stakeholder at a time, in their own words. Async and portable — each interview reads
+        the last, so disagreement surfaces instead of averaging away.</p>
+    </div>
+    <div class="stage reveal-soft" style="--accent:var(--gold)">
+      <div class="n">STAGE 2</div><h3>Charter</h3><code>feature-charter</code>
+      <p>Observable acceptance criteria, the assumption ledger, explicit non-goals, and the
+        conflicts that still need a human decision.</p>
+    </div>
+    <div class="stage reveal-soft" style="--accent:var(--violet)">
+      <div class="n">STAGE 3</div><h3>Plan</h3><code>feature-plan</code>
+      <p>Scout fan-out for blast radius, then phases mapped to criteria — starting with a
+        timeboxed spike that makes the riskiest assumption fail cheaply.</p>
+    </div>
+    <div class="stage reveal-soft" style="--accent:var(--magenta)">
+      <div class="n">STAGE 4</div><h3>Evaluate</h3><code>feature-eval</code>
+      <p>Written before the build, for someone who read none of the code: exact URLs, negative
+        scenarios, and probes designed to falsify each assumption.</p>
+    </div>
+    <div class="stage reveal-soft" style="--accent:var(--cyan)">
+      <div class="n">STAGE 5</div><h3>Retro</h3><code>feature-retro</code>
+      <p>Grade every assumption, name the stage each miss was first knowable at, and graduate
+        only the lessons that would change what happens next time.</p>
+    </div>
+  </div>
+  <div class="ledger reveal-soft">
+    <h3>The assumption ledger</h3>
+    <p>Every assumption carries who holds it, its <em>cheapest disproof</em>, and the blast radius
+      if it's wrong. The riskiest one becomes Phase 0 — a sandboxed spike, not a careful build.
+      After ship, each is graded, and the lessons land in the project's own
+      <code style="font-family:'JetBrains Mono',monospace;color:var(--gold)">docs/skopos/GUIDANCE.md</code>
+      — read by every future session, in any AI CLI.</p>
+    <div class="grades">
+      <span class="g-held">HELD</span><span class="g-broke">BROKE</span>
+      <span class="g-untested">UNTESTED — still live in production</span>
     </div>
   </div>
 </section>

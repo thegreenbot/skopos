@@ -31,6 +31,25 @@ and tone, your repository registry with scout fan-out, and a small roster of
 functional specialists (`scout`, `planner`, `implementer`, `reviewer`,
 `sentinel`).
 
+## The delivery loop
+
+Agentic delivery reaches 90% fast and stalls there — almost always because an
+assumption was wrong, not because the code was. Skopos ships a loop that
+treats assumptions as the deliverable:
+
+```
+feature-interview  →  feature-charter  →  feature-plan   →  build  →  feature-retro
+ one per stakeholder   criteria +          spike proves      …         grade every
+ async, portable       assumption ledger   the riskiest                assumption,
+                                          feature-eval                 keep the lesson
+                                          how anyone proves it
+```
+
+Artifacts live in the project (`docs/skopos/`), not in the tool, so lessons
+outlive any one machine or AI CLI. Every session checks
+`docs/skopos/GUIDANCE.md` before planning or editing. `feature-status` reports
+where everything stands. Full design: [docs/feedback-loop.md](docs/feedback-loop.md).
+
 ## What gets installed where
 
 | Content | Destination | Ownership |
