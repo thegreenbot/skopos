@@ -1,14 +1,61 @@
 # skopos
 
-**Observe. Reason. Deliver.**
+**AI agents are fast at starting. They're slow at finishing.**
 
-One global install that enhances whatever AI CLI is in use — Claude Code,
-Copilot CLI, and (via a one-file adapter) whatever comes next. Successor to
-[engsys](https://github.com/thegreenbot/engsys): where engsys naturalized one
-project at a time, skopos is a single user-level install built on what is
-universal — the Agent Skills `SKILL.md` standard and `~/.agents/skills/` —
-with thin per-tool adapters for what isn't standardized yet (global
-instructions, subagents).
+Ask an AI CLI to build something non-trivial and it hits 90% quickly — then
+stalls. Not because the code is wrong, but because somewhere early on it made
+an assumption that seemed safe and never surfaced it. Now you're debugging
+the assumption, not the code.
+
+The same pattern shows up everywhere:
+
+- **Config drift** — Claude Code, Cursor, Copilot each have their own config.
+  Keeping them consistent by hand doesn't scale.
+- **Assumption debt** — Agents assume things about your stack that live only
+  in the context window. When the session ends, the assumptions are gone.
+- **Lost lessons** — You taught it something. It worked. You closed the
+  terminal. Next session, you start over.
+
+**skopos fixes the last mile.**
+
+It gives every AI CLI on your machine a single source of truth: shared
+instructions, fenced per-tool config, and a delivery loop that makes
+assumptions explicit so they can be corrected before they derail the work.
+
+## The delivery loop
+
+**The reason agentic work stalls at 90% isn't the code — it's an assumption
+that was treated as fact.**
+
+skopos introduces a structured delivery loop:
+
+1. **Surface assumptions early** — before an agent writes a line of code,
+   the ledger makes its working beliefs explicit.
+2. **You correct what's wrong** — fast, before bad assumptions are baked
+   into hundreds of lines of generated code.
+3. **The correction gets written back** — not into the context window
+   (which evaporates), but into your instruction files, which the agent
+   reads at the start of every session.
+
+The loop closes. The lesson survives.
+
+```
+feature-interview  →  feature-charter  →  feature-plan   →  build  →  feature-retro
+ one per stakeholder   criteria +          spike proves      …         grade every
+ async, portable       assumption ledger   the riskiest                assumption,
+                                          feature-eval                 keep the lesson
+                                          how anyone proves it
+```
+
+Artifacts live in the project (`docs/skopos/`), not in the tool, so lessons
+outlive any one machine or AI CLI. Every session checks
+`docs/skopos/GUIDANCE.md` before planning or editing. `feature-status` reports
+where everything stands. Full design: [docs/feedback-loop.md](docs/feedback-loop.md).
+
+## Your files stay yours
+
+skopos writes inside clearly marked regions. Everything outside those
+regions is untouched — always. You're never locked in.
 
 ## Quick start
 
@@ -30,25 +77,6 @@ Restart your AI session — it now opens with the Skopos persona: your identity
 and tone, your repository registry with scout fan-out, and a small roster of
 functional specialists (`scout`, `planner`, `implementer`, `reviewer`,
 `sentinel`).
-
-## The delivery loop
-
-Agentic delivery reaches 90% fast and stalls there — almost always because an
-assumption was wrong, not because the code was. Skopos ships a loop that
-treats assumptions as the deliverable:
-
-```
-feature-interview  →  feature-charter  →  feature-plan   →  build  →  feature-retro
- one per stakeholder   criteria +          spike proves      …         grade every
- async, portable       assumption ledger   the riskiest                assumption,
-                                          feature-eval                 keep the lesson
-                                          how anyone proves it
-```
-
-Artifacts live in the project (`docs/skopos/`), not in the tool, so lessons
-outlive any one machine or AI CLI. Every session checks
-`docs/skopos/GUIDANCE.md` before planning or editing. `feature-status` reports
-where everything stands. Full design: [docs/feedback-loop.md](docs/feedback-loop.md).
 
 ## What gets installed where
 
