@@ -87,37 +87,10 @@ Prefer production-shaped fixtures over hand-made ones.
 
 ## Artifact format
 
-```markdown
-# Evaluation plan — <feature name>
-Feature: <slug> · Charter: <signed off | draft> · Date: <YYYY-MM-DD>
-
-## Where to look
-| Surface | URL / command | Environment | Access needed |
-|---------|---------------|-------------|---------------|
-| <name> | `<exact>` | staging | <role> |
-
-## Setup (once)
-1. <how to get into a position to test at all>
-
-## Acceptance procedures
-<T1…Tn as above, each mapped to an AC>
-
-## Negative scenarios
-<N1…Nn, each with the expected graceful behaviour>
-
-## Assumption probes
-<P1…Pn, each mapped to an A>
-
-## Out of scope for this pass
-- <what this evaluation deliberately does not cover, so silence isn't mistaken for coverage>
-
-## Result log
-| Date | Who | Passed | Failed | Notes |
-|------|-----|--------|--------|-------|
-
-## Signoff
-- [ ] <Direction owner> — if all of this passes, I will call the feature done
-```
+Use the `feature-eval` template (`~/.agents/templates/feature-eval.md`,
+shipped by skopos and shown/overridable during `skopos-setup`) as the
+skeleton — `T1…Tn` for acceptance procedures, `N1…Nn` for negative scenarios,
+`P1…Pn` for assumption probes, each built as described above.
 
 That last checkbox is the whole point: it converts "looks good to me" into a
 falsifiable, pre-agreed statement.
