@@ -13,6 +13,8 @@ test('loadConfig returns pure defaults when nothing exists', (t) => {
   assert.equal(config.version, 1);
   assert.equal(config.models.claude.smart, 'opus');
   assert.equal(config.compat.skillLinks, 'auto');
+  assert.equal(config.catalog.templates, 'all');
+  assert.deepEqual(config.templates, []);
 });
 
 test('user config merges over defaults', (t) => {
@@ -55,6 +57,8 @@ test('validateConfig catches the important mistakes', () => {
     sources: [{ name: 'bad name!', url: '' }],
     targets: { claude: 'yes' },
     compat: { skillLinks: 'sometimes' },
+    catalog: { templates: 'nope' },
+    templates: [{ description: 'missing name and content' }],
   });
   const errors = configLib.validateConfig(bad);
   const text = errors.join('\n');
@@ -65,6 +69,9 @@ test('validateConfig catches the important mistakes', () => {
   assert.match(text, /url is required/);
   assert.match(text, /targets\.claude/);
   assert.match(text, /skillLinks/);
+  assert.match(text, /catalog\.templates must be "all" or an array of names/);
+  assert.match(text, /templates\[0\]\.name is required/);
+  assert.match(text, /templates\[0\]\.content is required/);
 });
 
 test('valid default config produces no errors', () => {

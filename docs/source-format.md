@@ -25,6 +25,7 @@ acme-skopos-source/
 ├── skills/<name>/SKILL.md    # standard Agent Skills format, full dirs copied
 │   └── references/…          # any supporting files ship with the skill
 ├── agents/<name>.md          # universal agent format (below)
+├── templates/<name>.md       # workflow-artifact templates (below)
 └── instructions/*.md         # optional sections appended to the managed block
 ```
 
@@ -57,6 +58,28 @@ summon: One line for the persona roster (optional; falls back to description).
 System prompt body, tool-agnostic.
 ```
 
+### Templates
+
+One markdown file per workflow-artifact template — the skeleton a skill (or
+the user directly) fills in when producing a PR description, code review
+report, spec sheet, etc. Frontmatter carries `name` (required) and an
+optional `description`; the body is the template itself, installed verbatim
+to `~/.agents/templates/<name>.md`.
+
+```markdown
+---
+name: adr
+description: Architecture decision record.
+---
+
+# ADR-<n>: <title>
+Status: proposed | accepted | superseded · Date: <YYYY-MM-DD>
+
+## Context
+## Decision
+## Consequences
+```
+
 ### Instruction sections
 
 Every `instructions/*.md` is appended (alphabetically, deduped by filename
@@ -68,8 +91,10 @@ sections short — they live in every session's context.
 Highest first:
 
 1. the user's own unmanaged files — never touched;
-2. sources, in config order;
-3. the built-in catalog.
+2. templates declared inline in `config.templates` (the skopos-setup interview
+   writes these for gaps the shipped defaults don't cover);
+3. sources, in config order;
+4. the built-in catalog.
 
-Collisions (same skill/agent/section name) are skipped with a warning naming
-both origins — check `skopos status`.
+Collisions (same skill/agent/template/section name) are skipped with a
+warning naming both origins — check `skopos status`.

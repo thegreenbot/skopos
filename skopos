@@ -76,6 +76,7 @@ function reportInstall(r, cmd) {
   if (r.detected.length) kv('detected', `${r.detected.join(', ')} → targets enabled (persisted to config)`);
   kv('targets', r.targets.join(', ') || 'none');
   kv('skills', `${r.skills.length} → ~/.agents/skills (${r.skills.join(', ') || '-'})`);
+  kv('templates', `${r.templates.length} → ~/.agents/templates (${r.templates.join(', ') || '-'})`);
   kv('agents', `${r.agents.length} per target (${r.agents.join(', ') || '-'})`);
   const ch = r.changes;
   kv('files', `${r.managedCount} managed (${ch.added} new, ${ch.updated} updated, ${ch.removed} pruned), ${r.fenced.length} fenced block(s), ${r.links.length} compat link(s)`);
@@ -132,6 +133,7 @@ function main() {
         `  ${c.dim('config'.padEnd(11))}${s.configExists ? configLib.configPath(env) : 'not written yet (run the skopos-setup interview)'}`,
         `  ${c.dim('targets'.padEnd(11))}${s.targets.join(', ') || 'none'}`,
         `  ${c.dim('skills'.padEnd(11))}${s.skills.join(', ') || 'none'}`,
+        `  ${c.dim('templates'.padEnd(11))}${s.templates.join(', ') || 'none'}`,
         `  ${c.dim('agents'.padEnd(11))}${s.agents.join(', ') || 'none'}`,
       ];
       const srcs = Object.entries((s.lock && s.lock.sources) || {});
