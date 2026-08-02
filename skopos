@@ -15,6 +15,7 @@ const {
 const configLib = require('./lib/config');
 const { resolveEnv, exists, readText, safeJson } = require('./lib/util');
 const lockLib = require('./lib/lock');
+const c = require('./lib/colors');
 
 const skoposRoot = __dirname;
 
@@ -66,26 +67,28 @@ function say(lines) { console.log(lines.filter((l) => l !== null).join('\n')); }
 function fail(msg) { console.error(`error: ${msg}`); process.exit(1); }
 
 function reportInstall(r, cmd) {
-  const tag = r.dryRun ? ' (dry run — nothing written)' : '';
-  const lines = [`skopos ${r.mode}${tag}`];
-  if (r.detected.length) lines.push(`  detected tools → targets enabled: ${r.detected.join(', ')} (persisted to config)`);
-  lines.push(`  targets:  ${r.targets.join(', ') || 'none'}`);
-  lines.push(`  skills:   ${r.skills.length} → ~/.agents/skills (${r.skills.join(', ') || '-'})`);
-  lines.push(`  agents:   ${r.agents.length} per target (${r.agents.join(', ') || '-'})`);
-  const c = r.changes;
-  lines.push(`  files:    ${r.managedCount} managed (${c.added} new, ${c.updated} updated, ${c.removed} pruned), ${r.fenced.length} fenced block(s), ${r.links.length} compat link(s)`);
-  if (r.snapshotted.length) lines.push(`  rollback: ${r.snapshotted.length} pre-existing file(s) snapshotted — \`skopos uninstall\` restores them.`);
-  if (r.preexisting.length) {
-    lines.push(`  preserved (your own, untouched): ${r.preexisting.join(', ')}`);
-  }
+  const label = { install: 'install', update: 'update' }[cmd] || r.mode;
+  const header = r.dryRun
+    ? c.boldYellow(`◌ skopos ${label} — dry run, nothing written`)
+    : c.boldGreen(`✔ skopos ${label} — done`);
+  const lines = [header];
+  const kv = (k, v) => lines.push(`  ${c.dim(k.padEnd(11))}${v}`);
+  if (r.detected.length) kv('detected', `${r.detected.join(', ')} → targets enabled (persisted to config)`);
+  kv('targets', r.targets.join(', ') || 'none');
+  kv('skills', `${r.skills.length} → ~/.agents/skills (${r.skills.join(', ') || '-'})`);
+  kv('agents', `${r.agents.length} per target (${r.agents.join(', ') || '-'})`);
+  const ch = r.changes;
+  kv('files', `${r.managedCount} managed (${ch.added} new, ${ch.updated} updated, ${ch.removed} pruned), ${r.fenced.length} fenced block(s), ${r.links.length} compat link(s)`);
+  if (r.snapshotted.length) kv('rollback', `${r.snapshotted.length} pre-existing file(s) snapshotted — \`skopos uninstall\` restores them.`);
+  if (r.preexisting.length) kv('preserved', `(your own, untouched) ${r.preexisting.join(', ')}`);
+
   if (!r.personalized) {
-    lines.push('');
-    lines.push('  Not yet personalized — open your AI tool, run the skopos-setup interview,');
-    lines.push('  then run `skopos update`.');
+    lines.push('', c.cyan('  → Not yet personalized — open your AI tool, run the skopos-setup interview,'));
+    lines.push(c.cyan('    then run `skopos update`.'));
   }
   if (r.warnings.length) {
-    lines.push('', 'Warnings:');
-    for (const w of r.warnings) lines.push(`  ! ${w}`);
+    lines.push('', c.boldYellow(`  ⚠ Warnings (${r.warnings.length}):`));
+    for (const w of r.warnings) lines.push(c.yellow(`    ! ${w}`));
   }
   say(lines);
 }
@@ -109,42 +112,53 @@ function main() {
       if (r.ok) {
         const n = Object.keys(r.lock.managed || {}).length;
         const f = Object.keys(r.lock.fenced || {}).length;
-        console.log(`verify: OK — ${n} managed file(s) + ${f} fenced block(s) match (skopos ${r.lock.skoposVersion}).`);
+        console.log(c.boldGreen(`✔ verify: OK`) + ` — ${n} managed file(s) + ${f} fenced block(s) match (skopos ${r.lock.skoposVersion}).`);
         process.exit(0);
       }
-      console.log(`verify: DRIFT detected (skopos ${r.lock.skoposVersion}).`);
-      for (const m of r.missing) console.log(`  missing:  ${m}`);
-      for (const m of r.modified) console.log(`  modified: ${m}`);
+      console.log(c.boldRed(`✖ verify: DRIFT detected`) + ` (skopos ${r.lock.skoposVersion}).`);
+      for (const m of r.missing) console.log(c.red(`  missing:  ${m}`));
+      for (const m of r.modified) console.log(c.red(`  modified: ${m}`));
       process.exit(2);
     }
 
     if (cmd === 'status') {
       const s = runStatus({ env, skoposRoot });
+      const installedTag = s.installed
+        ? c.green(`yes (lock: skopos ${s.lock.skoposVersion})`)
+        : c.yellow('no');
       const lines = [
-        `skopos ${s.skoposVersion}`,
-        `  installed: ${s.installed ? `yes (lock: skopos ${s.lock.skoposVersion})` : 'no'}`,
-        `  config:    ${s.configExists ? configLib.configPath(env) : 'not written yet (run the skopos-setup interview)'}`,
-        `  targets:   ${s.targets.join(', ') || 'none'}`,
-        `  skills:    ${s.skills.join(', ') || 'none'}`,
-        `  agents:    ${s.agents.join(', ') || 'none'}`,
+        c.bold(`skopos ${s.skoposVersion}`),
+        `  ${c.dim('installed'.padEnd(11))}${installedTag}`,
+        `  ${c.dim('config'.padEnd(11))}${s.configExists ? configLib.configPath(env) : 'not written yet (run the skopos-setup interview)'}`,
+        `  ${c.dim('targets'.padEnd(11))}${s.targets.join(', ') || 'none'}`,
+        `  ${c.dim('skills'.padEnd(11))}${s.skills.join(', ') || 'none'}`,
+        `  ${c.dim('agents'.padEnd(11))}${s.agents.join(', ') || 'none'}`,
       ];
       const srcs = Object.entries((s.lock && s.lock.sources) || {});
-      lines.push(`  sources:   ${srcs.length ? '' : 'none'}`);
+      lines.push(`  ${c.dim('sources'.padEnd(11))}${srcs.length ? '' : 'none'}`);
       for (const [name, p] of srcs) lines.push(`    ${name} @ ${p.sha ? p.sha.slice(0, 12) : '?'} (${p.url})`);
       if (s.drift) {
-        lines.push(`  drift:     ${s.drift.ok ? 'none' : `${s.drift.missing.length} missing, ${s.drift.modified.length} modified — run \`skopos verify\``}`);
+        const driftTag = s.drift.ok
+          ? c.green('none')
+          : c.yellow(`${s.drift.missing.length} missing, ${s.drift.modified.length} modified — run \`skopos verify\``);
+        lines.push(`  ${c.dim('drift'.padEnd(11))}${driftTag}`);
       }
-      if (s.preexisting.length) lines.push(`  preserved (your own): ${s.preexisting.join(', ')}`);
-      if (s.warnings.length) { lines.push('  warnings:'); for (const w of s.warnings) lines.push(`    ! ${w}`); }
+      if (s.preexisting.length) lines.push(`  ${c.dim('preserved'.padEnd(11))}(your own) ${s.preexisting.join(', ')}`);
+      if (s.warnings.length) {
+        lines.push('', c.boldYellow(`  ⚠ Warnings (${s.warnings.length}):`));
+        for (const w of s.warnings) lines.push(c.yellow(`    ! ${w}`));
+      }
       say(lines);
       process.exit(0);
     }
 
     if (cmd === 'uninstall') {
       const r = runUninstall({ env, dryRun: args.dryRun });
-      const tag = r.dryRun ? ' (dry run — nothing written)' : '';
+      const header = r.dryRun
+        ? c.boldYellow('◌ skopos uninstall — dry run, nothing written')
+        : c.boldGreen('✔ skopos uninstall — done');
       say([
-        `skopos uninstall${tag}`,
+        header,
         `  removed ${r.removed.length} file(s)/link(s), stripped ${r.stripped.length} fence(s), restored ${r.restored.length} original(s).`,
         '  Your config.json was left in place.',
       ]);
