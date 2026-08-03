@@ -40,17 +40,11 @@ Concretely, that bans: "verify the feature works", "check the endpoint",
 
 ## Building the procedures
 
-For each criterion:
-
-```
-T1 · AC1 — <what this proves>
-  Preconditions: <account/role/data/flags>
-  Steps:
-    1. Go to <exact URL>
-    2. <exact action>
-  Expect: <exactly what appears / returns / changes>
-  If it fails: <what that most likely means — helps them report usefully>
-```
+For each criterion, write one procedure: a precondition (account/role/data/
+flags), numbered steps starting from an exact URL, an expected result
+specific enough to be observed rather than judged, and what a failure most
+likely means for whoever re-runs it. Use the `T1` entry in the `feature-eval`
+template (below) for the exact shape — don't invent a different one.
 
 ## Negative and edge scenarios
 
@@ -73,51 +67,21 @@ summon `sentinel` and fold its findings in as procedures.
 
 The section that makes this loop worth running. For each **load-bearing** and
 **contained** assumption in the charter, write a test whose purpose is to
-falsify it — not to confirm the happy path.
-
-```
-P1 · A2 — "every existing account has a verified email"
-  Probe: run <query> against a staging copy; count rows where verified_at IS NULL
-  Assumption holds if: count is 0
-  If it breaks: <which criteria and which plan phases are invalidated>
-```
+falsify it — not to confirm the happy path. For example: rather than assuming
+every existing account has a verified email because the schema says so,
+count the rows where `verified_at IS NULL` in a staging copy and let that
+number decide. Use the `P1` entry in the `feature-eval` template (below) for
+the exact shape.
 
 A probe that has never been run against real-shaped data is not evidence.
 Prefer production-shaped fixtures over hand-made ones.
 
 ## Artifact format
 
-```markdown
-# Evaluation plan — <feature name>
-Feature: <slug> · Charter: <signed off | draft> · Date: <YYYY-MM-DD>
-
-## Where to look
-| Surface | URL / command | Environment | Access needed |
-|---------|---------------|-------------|---------------|
-| <name> | `<exact>` | staging | <role> |
-
-## Setup (once)
-1. <how to get into a position to test at all>
-
-## Acceptance procedures
-<T1…Tn as above, each mapped to an AC>
-
-## Negative scenarios
-<N1…Nn, each with the expected graceful behaviour>
-
-## Assumption probes
-<P1…Pn, each mapped to an A>
-
-## Out of scope for this pass
-- <what this evaluation deliberately does not cover, so silence isn't mistaken for coverage>
-
-## Result log
-| Date | Who | Passed | Failed | Notes |
-|------|-----|--------|--------|-------|
-
-## Signoff
-- [ ] <Direction owner> — if all of this passes, I will call the feature done
-```
+Use the `feature-eval` template (`~/.agents/templates/feature-eval.md`,
+shipped by skopos and shown/overridable during `skopos-setup`) as the
+skeleton — `T1…Tn` for acceptance procedures, `N1…Nn` for negative scenarios,
+`P1…Pn` for assumption probes, each built as described above.
 
 That last checkbox is the whole point: it converts "looks good to me" into a
 falsifiable, pre-agreed statement.

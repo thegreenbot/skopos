@@ -83,6 +83,7 @@ functional specialists (`scout`, `planner`, `implementer`, `reviewer`,
 | Content | Destination | Ownership |
 |---|---|---|
 | Skills (full dirs, `SKILL.md` standard) | `~/.agents/skills/<name>/` | managed |
+| Templates (flat `.md`, workflow artifact skeletons) | `~/.agents/templates/<name>.md` | managed |
 | Compat skill links (per tool, `compat.skillLinks`) | `~/.claude/skills/`, `~/.copilot/skills/` | managed |
 | Agents (universal → per-tool frontmatter) | `~/.claude/agents/<n>.md`, `~/.copilot/agents/<n>.agent.md` | managed |
 | Instructions (persona + sections) | fenced block in `~/.claude/CLAUDE.md` and `~/.copilot/copilot-instructions.md` | **fenced** |

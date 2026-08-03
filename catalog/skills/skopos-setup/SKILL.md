@@ -30,8 +30,9 @@ plumbing: **you write exactly one file, `~/.skopos/config.json`** (respect
   "sources":  [ { "name": "", "url": "", "ref": "main" } ],
   "targets":  { "claude": true, "copilot": false },
   "models":   { "claude": { "smart": "opus", "fast": "sonnet" }, "copilot": {}, "agents": {} },
-  "catalog":  { "skills": "all", "agents": "all" },
-  "compat":   { "skillLinks": "auto" }
+  "catalog":  { "skills": "all", "agents": "all", "templates": "all" },
+  "compat":   { "skillLinks": "auto" },
+  "templates": [ { "name": "", "description": "", "content": "" } ]
 }
 ```
 
@@ -62,7 +63,20 @@ does that later.
 what's detected on the machine) and, only if the user cares, the model tier
 mapping (which model is "smart", which is "fast") per tool.
 
-**6. Write & render.** Show the final JSON. On approval:
+**6. Templates.** skopos ships default templates for the workflow artifacts it
+produces — PR descriptions, code review reports, spec sheets, and the
+feature-charter / feature-plan / feature-eval / feature-retro artifacts
+(`catalog/templates/*.md`, installed to `~/.agents/templates/`). List what's
+shipped and ask if any should be turned off (`catalog.templates`, same
+`"all"` | array-of-names shape as `catalog.skills`). Then ask explicitly
+whether any workflow artifact they care about is missing from that set — e.g.
+incident postmortems, ADRs, release notes. If so, get its name and either the
+full Markdown skeleton or enough description that you can draft one, show it
+back for approval, and add it to `templates` in the config (each entry:
+`name`, `description`, `content`). A `templates` entry with the same `name`
+as a shipped default overrides it.
+
+**7. Write & render.** Show the final JSON. On approval:
 1. Write `~/.skopos/config.json`.
 2. Run `skopos config validate` — fix and re-show if it fails.
 3. Run `skopos sources sync` if any sources were configured.

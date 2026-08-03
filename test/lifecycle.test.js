@@ -22,6 +22,8 @@ test('install writes lock, skills to the universal home, agents + fenced instruc
   assert.equal(r.firstInstall, true);
   assert.deepEqual(r.targets, ['claude']);
   assert.ok(fs.existsSync(path.join(env.agentsDir, 'skills', 'skopos-setup', 'SKILL.md')));
+  assert.ok(fs.existsSync(path.join(env.agentsDir, 'templates', 'pr-description.md')));
+  assert.ok(read(path.join(env.agentsDir, 'templates', 'pr-description.md')).includes('## Summary'));
   assert.ok(fs.existsSync(path.join(env.claudeDir, 'agents', 'scout.md')));
   const claudeMd = read(path.join(env.claudeDir, 'CLAUDE.md'));
   assert.ok(claudeMd.includes('SKOPOS:MANAGED:START'));
@@ -86,6 +88,33 @@ test('deselecting an agent prunes it; pre-existing user agents are untouched', (
   assert.ok(!fs.existsSync(path.join(env.claudeDir, 'agents', 'planner.md')));
   assert.ok(fs.existsSync(path.join(env.claudeDir, 'agents', 'scout.md')));
   assert.equal(read(userAgent), '---\nname: my-own-agent\n---\nmine');
+});
+
+test('user-supplied config template installs and overrides a same-named default', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({
+    templates: [
+      { name: 'adr', description: 'Architecture decision record', content: '# ADR-<n>\n' },
+      { name: 'pr-description', description: 'override', content: 'custom pr body' },
+    ],
+  }));
+  const r = install(env);
+  assert.ok(r.templates.includes('adr'));
+  assert.equal(read(path.join(env.agentsDir, 'templates', 'adr.md')).trim(), '# ADR-<n>');
+  assert.equal(read(path.join(env.agentsDir, 'templates', 'pr-description.md')).trim(), 'custom pr body');
+});
+
+test('deselecting a template prunes its installed file', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig());
+  install(env);
+  assert.ok(fs.existsSync(path.join(env.agentsDir, 'templates', 'spec-sheet.md')));
+
+  writeConfig(env, baseConfig({ catalog: { templates: ['pr-description'] } }));
+  const r2 = update(env);
+  assert.ok(r2.pruned.includes('agents:templates/spec-sheet.md'));
+  assert.ok(!fs.existsSync(path.join(env.agentsDir, 'templates', 'spec-sheet.md')));
+  assert.ok(fs.existsSync(path.join(env.agentsDir, 'templates', 'pr-description.md')));
 });
 
 test('--target install persists into config so bare update keeps the surface', (t) => {

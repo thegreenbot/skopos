@@ -2018,6 +2018,11 @@ State: {{.state}}
 
 ### Create PR from Issue
 
+Shape the PR body per the `pr-description` template
+(`~/.agents/templates/pr-description.md`, shipped by skopos and
+shown/overridable during `skopos-setup`) — a Summary and a Test plan, not a
+freeform description.
+
 ```bash
 # Create branch from issue
 gh issue develop 123 --branch feature/issue-123

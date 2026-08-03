@@ -17,8 +17,9 @@ post-push review loop.
 2. Run a local code review with the built-in `/code-review` skill against `origin/main`.
 3. Triage findings by severity — fix **Critical** + **Warning**; **Info** at discretion.
 4. Re-run to confirm clean; cap at ~2 passes.
-5. After opening the PR, persist the local review findings as a PR comment so the closeout
-   ceremony can mine them.
+5. After opening the PR, persist the local review findings as a PR comment, shaped per the
+   `code-review-report` template (`~/.agents/templates/code-review-report.md`, shipped by
+   skopos and shown/overridable during `skopos-setup`), so the closeout ceremony can mine them.
 
 For deeper, security-focused passes, the built-in `/security-review` command is also available.
 
