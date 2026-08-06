@@ -11,6 +11,7 @@
 const path = require('path');
 const {
   SKOPOS_VERSION, runInstall, runVerify, runUninstall, runStatus, runSourcesSync,
+  runSorAuth, runSorTest, runSorPublish, runSorList, runSorRead,
 } = require('./lib/commands');
 const configLib = require('./lib/config');
 const { resolveEnv, exists, readText, safeJson } = require('./lib/util');
@@ -297,6 +298,73 @@ function main() {
         process.exit(1);
       }
       fail('usage: skopos config validate');
+    }
+
+    if (cmd === 'sor') {
+      const sub = args._[1];
+      if (!sub) fail('usage: skopos sor auth|test|publish|list|read');
+
+      // Async commands
+      if (sub === 'auth' || sub === 'test' || sub === 'publish' || sub === 'list' || sub === 'read') {
+        (async () => {
+          try {
+            const loaded = configLib.loadConfig(env, skoposRoot);
+            let result;
+
+            if (sub === 'auth') {
+              const action = args._[2];
+              const system = args._[3];
+              result = await runSorAuth({ env, skoposRoot, action, system });
+              if (result.ok) console.log(JSON.stringify(result, null, 2));
+              else fail(result.message);
+            } else if (sub === 'test') {
+              const system = args._[2];
+              result = await runSorTest({ env, skoposRoot, system, log: console.error });
+              if (result.ok) {
+                console.log(`${c.green('✓')} system-of-record test passed`);
+                if (result.checks) {
+                  for (const check of result.checks) {
+                    const status = check.ok ? c.green('✓') : c.red('✗');
+                    console.log(`  ${status} ${check.name}: ${check.detail}`);
+                  }
+                }
+              } else {
+                fail(`test failed: ${result.message}`);
+              }
+            } else if (sub === 'publish') {
+              const system = args._[2];
+              const target = args._[3];
+              const kind = args._[4];
+              const feature = args._[5];
+              const file = args._[6];
+              if (!file) fail('usage: skopos sor publish <system> <target> <kind> <feature> <file>');
+              result = await runSorPublish({ env, skoposRoot, system, target, kind, feature, file, log: console.error });
+              if (result.ok) console.log(JSON.stringify(result, null, 2));
+              else fail(result.message);
+            } else if (sub === 'list') {
+              const system = args._[2];
+              const target = args._[3];
+              result = await runSorList({ env, skoposRoot, system, target, log: console.error });
+              if (result.ok) console.log(JSON.stringify(result, null, 2));
+              else fail(result.message);
+            } else if (sub === 'read') {
+              const system = args._[2];
+              const target = args._[3];
+              const remoteId = args._[4];
+              if (!remoteId) fail('usage: skopos sor read <system> <target> <remoteId>');
+              result = await runSorRead({ env, skoposRoot, system, target, remoteId, log: console.error });
+              if (result.ok) console.log(JSON.stringify(result, null, 2));
+              else fail(result.message);
+            }
+            process.exit(0);
+          } catch (e) {
+            fail(e.message);
+          }
+        })();
+        return;
+      }
+
+      fail(`unknown sor subcommand: ${sub}`);
     }
 
     console.error(`unknown command: ${cmd}\n`);
