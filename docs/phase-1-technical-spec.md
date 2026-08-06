@@ -420,6 +420,101 @@ skopos sor publish \
 
 **Local-first rule:** The local artifact is written first, always, and is never rolled back because remote publish failed.
 
+### 5.3 Artifact output — copy-paste + download (always, regardless of Jira)
+
+**Phase 2 requirement:** `feature-interview` and `feature-charter` always provide three outputs:
+
+1. **Local markdown file** — written to `docs/skopos/features/<slug>/` as usual
+2. **Copy-paste block** — raw markdown in a fenced code block, ready to paste into any tool:
+   ```markdown
+   Output:
+   
+   Copy this to share with the next person or paste into your system-of-record:
+   
+   ```markdown
+   ---
+   skopos-artifact: interview
+   skopos-feature: billing-export
+   ...
+   ---
+   
+   ## In their words
+   > ...
+   ```
+   ```
+3. **Downloadable file** — same markdown, offered as a download when running through skopos-setup or Claude Code:
+   - Filename: `skopos--billing-export--interview-01-po--v001.md`
+   - User can manually attach to Jira, email, Slack, or pass to next stakeholder
+
+**Why always?** The next stakeholder may not have access to the same system-of-record. This enables asynchronous hand-offs between team members using different tools (skopos, Copilot, Gemini, etc).
+
+### 5.4 Publishing with graceful degradation
+
+The publish sequence attempts Jira but falls back to copy-paste + download if Jira is unavailable:
+
+```
+feature-interview writes docs/skopos/features/<slug>/interviews/NN-<role>-<name>.md
+        │
+        ├─ config.systemOfRecord.enabled === false ───► output copy+download, done
+        │
+        └─ skopos sor publish --json
+                 ├─ load config + resolve secret (env > credentials file)
+                 │
+                 ├─ (secret missing or network down?) ──► FALLBACK: output copy+download + warn
+                 ├─ resolveTarget(FEAT-123)
+                 ├─ (404, permission denied?) ──────► FALLBACK: output copy+download + warn
+                 │
+                 ├─ list/read/upload to Jira
+                 ├─ (network/403/413?) ──────────► FALLBACK: output copy+download + warn
+                 │
+                 └─ SUCCESS: output copy+download + "published to Jira"
+```
+
+**Key behavior:**
+- Copy-paste + download are **always** produced, regardless of success or failure
+- Jira publish is **optional** — if it fails, the user can still hand off to the next person
+- `onFailure: warn` (default) proceeds after Jira failure; `onFailure: fail` exits 1 on publish error (but copy/download still provided)
+
+### 5.5 Cross-tool workflow — pasting prior artifacts
+
+**Phase 3 requirement:** `feature-interview` can accept a prior interview artifact pasted into the conversation as context:
+
+```
+User: [pastes artifact]
+   ---
+   skopos-artifact: interview
+   skopos-feature: billing-export
+   ...
+   ---
+
+Skill: [parses frontmatter, detects prior interview]
+  "I see an existing interview from Jane (Product). Here's what's documented..."
+  [shows summary]
+  "Did you see this already, or should I repeat the context?"
+```
+
+The skill parses the frontmatter, recognizes the artifact format, and treats pasted interviews the same as ones read from Jira. This enables:
+- Tech lead runs interview via skopos, downloads artifact
+- Tech lead sends to PO (email, Slack, etc)
+- PO pastes into Copilot
+- Copilot treats it as context (reads `skopos-feature`, `skopos-artifact` type, prior assumptions)
+- PO runs her interview, gets her own artifact (copy-paste + downloadable)
+- Loop continues across tools
+
+### 5.6 Mixed-source reading for feature-charter (Phase 4)
+
+**Phase 4 requirement:** `feature-charter` reads interviews from **all sources**:
+
+1. **Local** — `docs/skopos/features/<slug>/interviews/` (skopos-generated)
+2. **Jira** — via `skopos sor read` (auto-uploaded or manually uploaded)
+3. **Pasted** — frontmatter-bearing markdown in the conversation (from Copilot, manually created, etc)
+
+The charter reconciliation logic is source-agnostic: if it has the right frontmatter (`skopos-artifact: interview`, `skopos-feature: billing-export`), it is a valid input. This enables the PO's Copilot-generated interview to be treated identically to a skopos-generated one.
+
+### 5.7 Reading
+
+`skopos sor read` and `skopos sor list` **ship in Phase 1** (they are 40 lines given the client already exists, and `publish` needs `list`/`read` internally for idempotency anyway). Wiring them into `feature-interview`'s opening phase is Phase 3 — the CLI surface is available early so Phase 3 is a SKILL.md change with no code.
+
 ---
 
 ## 6. Directory structure
@@ -648,6 +743,63 @@ The safe version of `catalog/integrations/`: gate loading on **both** `config.ca
 
 ---
 
+## 11. Cross-tool workflow example
+
+**Day 1 — Tech Lead (using skopos)**
+
+```bash
+skopos-setup          # configure Jira
+feature-interview     # interview tech lead
+# Output:
+#   - docs/skopos/features/billing-export/interviews/01-tech-lead.md (local)
+#   - Copy-paste block: raw markdown in chat
+#   - Download link: billing-export-interview-01-tech-lead-v001.md
+#   - Auto-published to Jira ticket FEAT-123
+```
+
+Tech lead sends downloaded file to PO via Slack.
+
+**Day 2 — PO (using Microsoft Copilot in browser)**
+
+PO pastes the interview artifact into Copilot chat:
+```
+Here's the tech lead's interview on the billing export feature:
+
+---
+skopos-artifact: interview
+skopos-feature: billing-export
+...
+---
+
+Now please conduct your interview as the Product Owner...
+```
+
+Copilot-based feature-interview skill (no skopos):
+- Recognizes the artifact format (frontmatter)
+- Shows: "I see a tech lead interview already conducted. Here's what's documented..."
+- Asks: "Did you review this? Any conflicts with what you're seeing?"
+- Runs PO's interview questions
+- Outputs:
+  - Copy-paste block: raw markdown in chat
+  - Download link: billing-export-interview-02-po-v001.md
+
+PO manually uploads to Jira or sends back to tech lead.
+
+**Day 3 — Tech Lead (using skopos again)**
+
+```bash
+skopos config        # still configured with Jira
+feature-charter      # reconcile all interviews
+# Reads from Jira:
+#   - 01-tech-lead.md (auto-uploaded day 1)
+#   - 02-po.md (manually uploaded day 2)
+# Reconciles both, generates charter.md, auto-publishes to Jira
+```
+
+**Key insight:** The same Markdown format works in all contexts. No format translation. No special tooling. Just copy-paste and go.
+
+---
+
 ## Phase 1 acceptance checklist
 
 - [x] `skopos-setup` offers system-of-record configuration including artifact storage strategy (§4)
@@ -658,8 +810,12 @@ The safe version of `catalog/integrations/`: gate loading on **both** `config.ca
 - [x] Auto-increment versioning (§3.3, invoked in Phase 2)
 - [x] Tests cover Jira with a mock API (§7)
 - [x] Docs updated (§6 `/home/user/skopos/docs/system-of-record.md`)
+- [x] Universal artifact format enables cross-tool workflow (§5.3, §5.5, §5.6, §11)
+- [x] Always offer copy-paste + download, even when Jira succeeds (§5.3)
+- [x] Graceful fallback to copy-paste + download when Jira unavailable (§5.4)
 - [ ] *Deferred to Phase 2:* `feature-interview` / `feature-charter` invoke `skopos sor publish`
-- [ ] *Deferred to Phase 3:* Reading artifacts during interviews
+- [ ] *Deferred to Phase 3:* Reading artifacts during interviews + pasting prior artifacts
+- [ ] *Deferred to Phase 4:* `feature-charter` reading from mixed sources (local + remote + pasted)
 
 ---
 
