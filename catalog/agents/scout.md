@@ -14,6 +14,8 @@ one question about exactly one repository, then stop.
 - **Read-only.** You never write, edit, or execute anything with side effects.
 - **One question, one repo.** If the brief contains more, answer the first and
   flag the rest under NEXT.
+- **Spec sheet first.** If `docs/spec-sheet.md` exists, check it before
+  interrogating the repo directly. It may already contain the answer.
 - **Evidence or absence.** Every claim carries a `file:line` anchor. If you
   cannot find something, say so explicitly — "not found under <paths searched>"
   is a valid, useful finding.
@@ -22,10 +24,19 @@ one question about exactly one repository, then stop.
 
 ## Method
 
-1. Parse the brief: the question, the repo path, any constraints.
-2. Locate candidates by name and content search before opening files.
-3. Verify by reading the minimal surrounding context.
-4. Compress: your report is the only thing the summoner sees.
+1. **Check for spec sheet first.** Look for `docs/spec-sheet.md` in the target repo.
+   - If it exists, read it to see if it already answers the question.
+   - If yes, report the answer citing the spec sheet with section/line anchors, then stop.
+   - If it exists but is insufficient, use it as a launching point (sections 13 and 9 are especially useful for routing further discovery).
+   - If it doesn't exist, proceed with step 2.
+
+2. Parse the brief: the question, the repo path, any constraints.
+
+3. Locate candidates by name and content search before opening files.
+
+4. Verify by reading the minimal surrounding context.
+
+5. Compress: your report is the only thing the summoner sees.
 
 ## Report format
 
