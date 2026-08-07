@@ -21,6 +21,7 @@ function resolveModel(agent, config) {
 
 module.exports = {
   name: 'claude',
+  resolveModel,
 
   detect(env) {
     return exists(env.claudeDir);
