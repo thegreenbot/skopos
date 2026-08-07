@@ -65,8 +65,27 @@ Example output when a config override under-serves an agent:
     ! agent 'planner' expects complex reasoning but 'haiku' offers simple
 ```
 
+## Full compatibility matrix
+
+Advisories above only check the model each target currently resolves. To see
+every catalog/source agent against every registered model — the reference
+data behind this doc — run:
+
+```
+skopos models matrix
+```
+
+This is the same matrix `test/model-compatibility.test.js` asserts against
+in CI (`.github/workflows/test.yml`, run on every push and PR): it renders
+every agent against every registered model tier and confirms the advisor's
+verdict agrees with a from-scratch capability comparison, so a regression in
+either the registry or the requirement heuristics fails the build instead of
+surfacing as a confused user report.
+
 ## Extending the registry
 
 Add a new model by adding an entry to `CAPABILITIES` in
 `lib/model-capabilities.js` with all five fields filled in — the test suite
-(`test/model-capabilities.test.js`) enforces every entry is complete.
+(`test/model-capabilities.test.js`) enforces every entry is complete, and
+`test/model-compatibility.test.js` will automatically include it in the
+cross-model render/advisory checks.
