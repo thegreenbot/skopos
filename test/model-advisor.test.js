@@ -14,9 +14,9 @@ const toolHeavyFastAgent = {
   data: { name: 'implementer', model: 'fast', tools: ['read', 'grep', 'glob', 'edit', 'write', 'shell'] },
 };
 
-test('requirementsFor: smart tier needs complex reasoning, fast needs moderate', () => {
+test('requirementsFor: smart tier needs complex reasoning, fast needs only simple', () => {
   assert.equal(requirementsFor(smartAgent).reasoningDepth, 'complex');
-  assert.equal(requirementsFor(fastAgent).reasoningDepth, 'moderate');
+  assert.equal(requirementsFor(fastAgent).reasoningDepth, 'simple');
 });
 
 test('requirementsFor: tool-heavy or shell-using agents need advanced tool-use', () => {

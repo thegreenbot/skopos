@@ -41,7 +41,7 @@ Each catalog/source agent declares a `model:` tier (`smart` or `fast`) and a
 `tools:` list in its frontmatter. Skopos turns that into a requirement:
 
 - `model: smart` → requires `complex` reasoning depth.
-- `model: fast` → requires `moderate` reasoning depth.
+- `model: fast` → requires `simple` reasoning depth.
 - More than 3 tools, or a `shell` tool → requires `advanced` tool-use.
   Otherwise `basic` tool-use is enough.
 
