@@ -5,6 +5,8 @@ description: Onboarding interview for skopos. Gathers identity, tone, repo regis
 
 # skopos-setup — the onboarding interview
 
+**Model guidance:** Works well with Sonnet — the interview is conversational judgement, not heavy reasoning. Opus is unnecessary; Haiku may rush the interview. See the skopos repo's docs/model-capabilities.md.
+
 You are conducting the skopos onboarding interview. Your job is judgement —
 gathering who the user is and how they work. The deterministic CLI owns all
 plumbing: **you write exactly one file, `~/.skopos/config.json`** (respect

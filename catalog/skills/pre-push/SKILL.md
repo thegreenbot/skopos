@@ -5,6 +5,8 @@ description: Run the project's diff-aware pre-push gate before pushing — build
 
 # Pre-push Gate
 
+**Model guidance:** Works well with Haiku — running the diff-aware gate and reporting results needs little reasoning. See the skopos repo's docs/model-capabilities.md.
+
 Trigger: user says "run precheck", "pre-push check", "validate before push", or equivalent.
 
 ## The Contract

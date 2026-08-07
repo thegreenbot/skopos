@@ -5,6 +5,8 @@ description: Show where every tracked feature stands in the skopos delivery loop
 
 # feature-status — where everything stands
 
+**Model guidance:** Works well with Haiku — this is a read-only status report with no judgement calls. See the skopos repo's docs/model-capabilities.md.
+
 Read-only. Reports the state of the delivery loop in this repo and names the
 single next action per feature.
 

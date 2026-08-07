@@ -7,6 +7,8 @@ metadata:
 
 # Local Code Review
 
+**Model guidance:** Works best with Opus or Sonnet — judging severity and false positives needs real reasoning. Haiku can run it but should not be trusted with the final call on borderline findings. See the skopos repo's docs/model-capabilities.md.
+
 Local pre-push review uses the **built-in `/code-review` skill**. Run a local code review with
 `/code-review` before `git push` so PRs open already-reviewed and CI minutes aren't spent on a
 post-push review loop.

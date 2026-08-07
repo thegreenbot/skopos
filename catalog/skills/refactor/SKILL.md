@@ -6,6 +6,8 @@ license: MIT
 
 # Refactor
 
+**Model guidance:** Works best with Sonnet; Opus is worth it for large or ambiguous refactors. Haiku is not recommended — behavior-preservation calls need real reasoning. See the skopos repo's docs/model-capabilities.md.
+
 ## Overview
 
 Improve code structure and readability without changing external behavior. Refactoring is gradual evolution, not revolution. Use this for improving existing code, not rewriting from scratch.

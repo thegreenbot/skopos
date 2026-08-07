@@ -7,6 +7,8 @@ allowed-tools: Bash
 
 # Git Commit with Conventional Commits
 
+**Model guidance:** Works well with Haiku or Sonnet — conventional-commit generation from a diff is mostly mechanical. See the skopos repo's docs/model-capabilities.md.
+
 ## Overview
 
 Create standardized, semantic git commits using the Conventional Commits specification. Analyze the actual diff to determine appropriate type, scope, and message.

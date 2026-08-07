@@ -14,8 +14,16 @@ module.exports = {
   agentDest(env, agent) {},          // destination for one rendered agent
   renderAgent(agent, config) {},     // universal agent → tool-native file content
   skillLinkDir(env) {},              // where compat skill links land
+  resolveModel(agent, config) {},    // agent + config → the literal model name that will render
 };
 ```
+
+`resolveModel` is exported (not just used internally by `renderAgent`) so
+`lib/model-advisor.js` can check the model an adapter will actually render
+against that agent's inferred capability requirements — see
+[docs/model-capabilities.md](model-capabilities.md). A new adapter should
+implement it with the same "per-agent override → tier map → tier/undefined"
+precedence claude/copilot use, so `skopos models check`/`matrix` cover it too.
 
 `env` carries the resolved roots (`claudeDir`, `copilotDir`, `agentsDir`,
 `skoposHome`) — always env-overridable, never hardcode a home path.
@@ -32,6 +40,12 @@ Skills' true home is `~/.agents/skills/` (Agent Skills standard). The compat
 links exist for tools that don't read that directory yet; disable with
 `compat.skillLinks: "never"` once a tool reads the standard location. On
 Windows, links degrade symlink → junction → copy.
+
+The `model:` tier resolution each adapter does here is what actually ships;
+it's deterministic by design. For the informational layer built on top
+(capability advisories, cross-model compatibility, delegation preference
+signaling), see [docs/model-capabilities.md](model-capabilities.md) and
+[docs/model-routing-guide.md](model-routing-guide.md).
 
 ## Rules for new adapters
 

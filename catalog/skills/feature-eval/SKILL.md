@@ -5,6 +5,8 @@ description: Write the evaluation plan for a feature — step-by-step test proce
 
 # feature-eval — how anyone proves it's done
 
+**Model guidance:** Works well with Sonnet; Opus adds value for adversarial edge-case thinking. Haiku can follow the template but will miss subtler probes. See the skopos repo's docs/model-capabilities.md.
+
 The evaluation plan is written **before** implementation and handed to the
 person who will judge the work. If they can't follow it without asking the
 author a question, it isn't finished.

@@ -5,6 +5,8 @@ description: Distill stakeholder interviews into a feature charter — observabl
 
 # feature-charter — what "complete" means, in writing
 
+**Model guidance:** Works best with Opus — reconciling divergent stakeholder views into one coherent charter is the most judgement-heavy step in the delivery loop. Sonnet is acceptable; Haiku is not recommended. See the skopos repo's docs/model-capabilities.md.
+
 The charter reconciles several stakeholders' views of done into one document
 everybody can be held to. It is the contract; everything downstream cites it.
 
