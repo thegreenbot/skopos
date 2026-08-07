@@ -5,6 +5,8 @@ description: After a feature ships, grade which assumptions held, name the misse
 
 # feature-retro — grade the assumptions, keep the lesson
 
+**Model guidance:** Works well with Sonnet; Opus helps when grading subtle or contested assumptions. Haiku can run the mechanics but may miss nuance in what actually went wrong. See the skopos repo's docs/model-capabilities.md.
+
 Most retrospectives produce feelings. This one produces two things: a graded
 assumption ledger, and lessons written so a future session actually acts on
 them.

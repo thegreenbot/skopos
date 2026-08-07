@@ -5,6 +5,8 @@ description: Analyze the codebase and its dependencies against a signed feature 
 
 # feature-plan — how it gets built, and what we prove first
 
+**Model guidance:** Works best with Opus — phased planning plus blast-radius analysis across a repo registry needs strong reasoning. Sonnet is acceptable; Haiku is not recommended. See the skopos repo's docs/model-capabilities.md.
+
 **Artifact:** `docs/skopos/features/<slug>/plan.md`
 **Input:** the charter (`charter.md`) — refuse to plan without one; run
 `feature-charter` first. Planning against unstated criteria is how the 90%

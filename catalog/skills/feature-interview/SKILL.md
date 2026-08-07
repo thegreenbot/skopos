@@ -5,6 +5,8 @@ description: Interview one stakeholder about what "done" means for a feature, in
 
 # feature-interview — one stakeholder, one sitting
 
+**Model guidance:** Works well with Sonnet. Opus is not required for a single-stakeholder conversation; Haiku can conduct it but may under-probe vague answers. See the skopos repo's docs/model-capabilities.md.
+
 Agentic delivery reaches 90% fast and stalls there, because the wrong thing
 was assumed, not because the code was wrong. This interview exists to drag
 those assumptions into text **before** anyone writes code.

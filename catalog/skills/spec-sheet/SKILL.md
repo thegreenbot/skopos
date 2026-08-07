@@ -5,6 +5,8 @@ description: Generate or regenerate docs/spec-sheet.md — a deep-analysis docum
 
 # spec-sheet — a durable map of what this repo is
 
+**Model guidance:** Works best with Opus — deep repo analysis across many files, same doctrine as feature-plan. Sonnet is acceptable; Haiku is not recommended. See the skopos repo's docs/model-capabilities.md.
+
 The artifact-producing counterpart to what `scout` does ephemerally: instead
 of a report that lives only in one session's context, this is a durable,
 regenerable file the project keeps.

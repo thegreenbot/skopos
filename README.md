@@ -127,7 +127,18 @@ skopos status
 skopos uninstall [--dry-run]      # strip fences, restore snapshots
 skopos sources sync|list
 skopos config validate
+skopos models list|check|signal [<agent>] [--family claude|copilot]|matrix
 ```
+
+## Model routing
+
+skopos never decides which model runs your work — the AI platform executing
+it always does. What it can do is inform that decision: a small capability
+registry, per-agent advisories baked into every `install`/`update`, and a
+preference-signaling API for when work gets delegated elsewhere. See
+[docs/model-capabilities.md](docs/model-capabilities.md) for the capability
+matrix and [docs/model-routing-guide.md](docs/model-routing-guide.md) for how
+tier resolution and delegation signaling fit together.
 
 ## Enterprise onboarding
 

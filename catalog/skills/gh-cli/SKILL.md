@@ -5,6 +5,8 @@ description: GitHub CLI (gh) comprehensive reference for repositories, issues, p
 
 # GitHub CLI (gh)
 
+**Model guidance:** Works well with Haiku — this is a reference lookup, not a reasoning task. See the skopos repo's docs/model-capabilities.md.
+
 Comprehensive reference for GitHub CLI (gh) - work seamlessly with GitHub from the command line.
 
 **Version:** 2.85.0 (current as of January 2026)
