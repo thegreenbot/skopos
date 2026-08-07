@@ -117,6 +117,13 @@ test('deselecting a template prunes its installed file', (t) => {
   assert.ok(fs.existsSync(path.join(env.agentsDir, 'templates', 'pr-description.md')));
 });
 
+test('install surfaces a model advisory warning when a config override under-serves an agent', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({ models: { agents: { planner: 'haiku' } } }));
+  const r = install(env);
+  assert.ok(r.warnings.some((w) => w.includes("[claude] agent 'planner' expects complex reasoning but 'haiku' offers simple")));
+});
+
 test('--target install persists into config so bare update keeps the surface', (t) => {
   const { env } = makeSandbox(t);
   fs.mkdirSync(env.claudeDir, { recursive: true });

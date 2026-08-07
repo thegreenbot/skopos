@@ -11,6 +11,7 @@
 const path = require('path');
 const {
   SKOPOS_VERSION, runInstall, runVerify, runUninstall, runStatus, runSourcesSync,
+  runModelsList, runModelsCheck,
   runSorAuth, runSorTest, runSorPublish, runSorList, runSorRead,
 } = require('./lib/commands');
 const configLib = require('./lib/config');
@@ -61,6 +62,13 @@ Commands:
       Sync enterprise/approved-content sources (git) and pin SHAs, or list them.
   config validate
       Validate ~/.skopos/config.json (after enterprise-defaults merge).
+  models list
+      Print the known model capability matrix (informational — see
+      docs/model-capabilities.md).
+  models check
+      Advise whether each rendered agent's resolved model meets its
+      declared reasoning/tool-use needs, per enabled target. Informational
+      only; never blocks install/update (which run this automatically).
 
 First run: ./skopos install, then open your AI tool and run the skopos-setup
 interview, then ./skopos update.`;
@@ -298,6 +306,50 @@ function main() {
         process.exit(1);
       }
       fail('usage: skopos config validate');
+    }
+
+    if (cmd === 'models') {
+      const sub = args._[1];
+
+      if (sub === 'list') {
+        const { models } = runModelsList();
+        const lines = [];
+        lines.push(fmt.header('SKOPOS MODELS', 'double'));
+        lines.push('');
+        lines.push(c.dim('  Informational only — platforms make the final routing decision.'));
+        lines.push('');
+        for (const m of models) {
+          lines.push(c.bold(`  ${m.name}`) + c.dim(` (${m.family})`));
+          lines.push(`    reasoning: ${m.reasoningDepth}   tool-use: ${m.toolUse}   concurrent-tools: ${m.concurrentTools}   cost: ${m.costTier}`);
+          lines.push(`    best for: ${m.bestFor.join(', ')}`);
+          lines.push('');
+        }
+        say(lines);
+        process.exit(0);
+      }
+
+      if (sub === 'check') {
+        const r = runModelsCheck({ env, skoposRoot });
+        const lines = [];
+        lines.push(fmt.header('SKOPOS MODELS CHECK', 'double'));
+        lines.push('');
+        if (!r.targets.length) {
+          lines.push('  no targets enabled — run `skopos install` first.');
+        }
+        for (const res of r.results) {
+          const tag = res.warnings.length ? c.boldYellow('⚠') : c.green('✔');
+          lines.push(`  ${tag} [${res.target}] ${res.agent} → ${res.model || '(no model resolved)'}`);
+          for (const w of res.warnings) lines.push(c.yellow(`      ! ${w}`));
+        }
+        lines.push('');
+        lines.push(r.warnings.length
+          ? c.boldYellow(`  ⚠ ${r.warnings.length} advisory warning(s) — informational, nothing was blocked.`)
+          : c.boldGreen('  ✔ every resolved model meets its agent\'s declared requirements.'));
+        say(lines);
+        process.exit(0);
+      }
+
+      fail('usage: skopos models list|check');
     }
 
     if (cmd === 'sor') {

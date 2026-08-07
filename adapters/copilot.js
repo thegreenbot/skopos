@@ -26,6 +26,7 @@ function resolveModel(agent, config) {
 
 module.exports = {
   name: 'copilot',
+  resolveModel,
 
   detect(env) {
     return exists(env.copilotDir);
