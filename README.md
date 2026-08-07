@@ -52,6 +52,27 @@ outlive any one machine or AI CLI. Every session checks
 `docs/skopos/GUIDANCE.md` before planning or editing. `feature-status` reports
 where everything stands. Full design: [docs/feedback-loop.md](docs/feedback-loop.md).
 
+## Cross-tool collaboration
+
+Not everyone on your team uses the same AI harness. Your tech lead might use Claude Code, your PO might only have access to Microsoft Copilot via browser, and your designer might use Gemini. **skopos makes this work.**
+
+Interviews and charters are stored as **portable Markdown artifacts** (with YAML frontmatter) in your system-of-record (Jira, GitHub, Linear, etc). Any team member, any tool:
+
+1. **Download or copy-paste** the prior interview artifact
+2. **Paste into your tool** (Copilot, Gemini, etc) as context
+3. **Run your interview** in your own AI harness
+4. **Download or copy-paste** your results
+5. Pass to the next person or attach to your system-of-record
+
+The artifact format is universal — same Markdown in Jira, Copilot, local repo, or email. No format translation. No special tooling. The charter reconciles all interviews regardless of who conducted them or which tool they used.
+
+**Example workflow:**
+- Tech lead (skopos) → interview + auto-upload to Jira
+- Product owner (Copilot) → receives artifact, pastes, interviews, downloads
+- Tech lead (skopos) → reads all interviews from Jira, creates charter
+
+See [docs/phase-1-technical-spec.md § 11](docs/phase-1-technical-spec.md#11-cross-tool-workflow-example) for a detailed walkthrough.
+
 ## Your files stay yours
 
 skopos writes inside clearly marked regions. Everything outside those

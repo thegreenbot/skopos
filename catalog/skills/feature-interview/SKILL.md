@@ -26,7 +26,13 @@ convention instead and say so in your first message.
 1. Read `docs/skopos/GUIDANCE.md` if it exists — past lessons often name the
    question this project always forgets to ask. Ask it.
 2. Read every existing interview under this feature's `interviews/`.
-3. Establish: feature slug, who you're interviewing, their role.
+3. If your config has `systemOfRecord.enabled: true` and `systemOfRecord.publish.interviews: true`,
+   try to fetch prior interviews from the system-of-record (Jira, GitHub, etc.). Report what you found.
+   If that fails and `onFailure: fail`, stop and ask them to paste prior interviews manually. If `warn`,
+   continue with manual fallback.
+4. Ask if they have prior interview artifacts (from another AI tool, manual notes, etc.) to paste in.
+   If yes, read them as context before proceeding.
+5. Establish: feature slug, who you're interviewing, their role.
 
 **Order matters.** Interview the direction-setter first (product owner or
 whoever owns the outcome), then delivery (tech lead), then the wider
@@ -143,6 +149,24 @@ Feature: <slug> · Date: <YYYY-MM-DD> · Interviewer: skopos
 
 Keep assumption IDs unique **per feature**, not per interview — later
 artifacts reference `A3` and must mean one thing.
+
+## Output your artifact
+
+Write the markdown artifact as shown in Phase 5 above. Then:
+
+**If `systemOfRecord.enabled: true` and `systemOfRecord.publish.interviews: true`:**
+1. Try to publish the interview to your configured system (Jira, GitHub, etc.).
+   - If successful: Report the remote artifact link. They can share this URL across tools.
+   - If failed and `onFailure: fail`: Stop and ask them to upload manually (see below).
+   - If failed and `onFailure: warn`: Warn them, then proceed to manual copy-paste (see below).
+
+**Always provide manual fallback:**
+- Show the markdown in a fenced code block for copy-paste (with "Copy to clipboard" if in web).
+- Provide a downloadable file `<feature-slug>-interview-NN.md` they can save and share.
+
+**Attribution & context:**
+- If `systemOfRecord.publish.includeCommitSha: true`, append the commit SHA of the current repo
+  to the frontmatter (helps trace which version of code prompted this interview).
 
 ## Next
 

@@ -12,10 +12,20 @@ everybody can be held to. It is the contract; everything downstream cites it.
 
 ## Inputs
 
-Every interview under `docs/skopos/features/<slug>/interviews/`, plus
-`docs/skopos/GUIDANCE.md`. If only one interview exists, say so and offer to
-run `feature-interview` for the missing perspective — a single-stakeholder
-charter is a scope risk, not a charter.
+Collect interviews from all sources:
+1. Local files under `docs/skopos/features/<slug>/interviews/`.
+2. If `systemOfRecord.enabled: true`, fetch interviews from your configured system (Jira, GitHub, etc.).
+   - Try to list all artifacts matching the feature slug.
+   - If successful, show what you found and add them to the pool.
+   - If failed and `onFailure: fail`, stop and ask them to provide interviews manually (see below).
+   - If failed and `onFailure: warn`, warn and continue.
+3. Ask if they have pasted interviews from other tools (Slack threads, emails, copy-paste) to add to the pool.
+
+Once you have collected all interviews from all sources, reconcile them together as if they were all local.
+If only one interview exists (combined from all sources), say so and offer to run `feature-interview` for
+the missing perspective — a single-stakeholder charter is a scope risk, not a charter.
+
+Also read `docs/skopos/GUIDANCE.md` if it exists.
 
 ## Rules
 
@@ -68,6 +78,24 @@ The charter is **signed off** when every stakeholder interviewed has ticked
 their box and no `Decisions required` row is still `open`. Until then,
 downstream skills may run but must print the charter's status at the top of
 their output — nobody should discover mid-implementation that the bar moved.
+
+## Output your charter
+
+Write the markdown artifact using the `feature-charter` template. Then:
+
+**If `systemOfRecord.enabled: true` and `systemOfRecord.publish.charter: true`:**
+1. Try to publish the charter to your configured system (Jira, GitHub, etc.).
+   - If successful: Report the remote artifact link. The team can reference it across tools.
+   - If failed and `onFailure: fail`: Stop and ask them to upload manually (see below).
+   - If failed and `onFailure: warn`: Warn them, then proceed to manual copy-paste (see below).
+
+**Always provide manual fallback:**
+- Show the markdown in a fenced code block for copy-paste (with "Copy to clipboard" if in web).
+- Provide a downloadable file `<feature-slug>-charter.md` they can save and share.
+
+**Attribution & context:**
+- If `systemOfRecord.publish.includeCommitSha: true`, append the commit SHA of the current repo
+  to the frontmatter (helps trace which version of code prompted this charter).
 
 ## Next
 
