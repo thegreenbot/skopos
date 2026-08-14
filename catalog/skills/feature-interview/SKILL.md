@@ -18,6 +18,7 @@ each writes a standalone artifact that the next interview reads.
 
 ```
 docs/skopos/features/<slug>/interviews/NN-<role>-<name>.md
+docs/skopos/features/<slug>/interviews/skopos--<slug>--interview-handoff--vNNN.md   (see "Handing off" below, only when needed)
 ```
 
 If the repo already keeps this material somewhere else, follow the repo's
@@ -152,6 +153,42 @@ Feature: <slug> · Date: <YYYY-MM-DD> · Interviewer: skopos
 Keep assumption IDs unique **per feature**, not per interview — later
 artifacts reference `A3` and must mean one thing.
 
+## Handing off without skopos or system-of-record access
+
+Copy-paste and download (below) are enough when the next stakeholder has
+*some* AI tool with the feature-interview skill installed — they read the
+transcript, already know the phases, and carry on. They are not enough when
+the next stakeholder has nothing installed at all: a customer, a contractor,
+an executive with only a browser tab open to a generic chat assistant. That
+person's AI needs the interview instructions themselves, not just a
+transcript to react to.
+
+Ask, before you finish: **"Does whoever goes next have skopos, or at least
+this skill, available to them?"** If no (or you don't know), build a
+hand-off packet in addition to the normal artifact:
+
+1. Use the `interview-handoff` template (`~/.agents/templates/interview-handoff.md`,
+   shipped by skopos and shown/overridable during `skopos-setup`).
+2. Fill in the feature slug and your own name/contact as "handed off by" —
+   that's who the packet tells the next person to send their result back to.
+3. Under "Prior interviews," paste the **full text** of every interview
+   under this feature's `interviews/` folder, including the one you just
+   wrote — not a summary. The next person's AI has no repo access; whatever
+   isn't in the packet doesn't exist for them.
+4. Leave the next stakeholder's name and role blank — the packet's opening
+   question establishes both.
+5. Write it to `docs/skopos/features/<slug>/interviews/skopos--<slug>--interview-handoff--vNNN.md`,
+   incrementing the version if a packet already exists for this feature.
+
+The packet is self-contained: interview rules, phases, and the
+read-back-then-write artifact format are inline, so any AI chat interface
+can run it from a paste with nothing installed. It closes by asking the new
+stakeholder to either add their finished interview to the system-of-record
+themselves (same as the normal process, if they have access) or save it and
+send it back to whoever handed it to them — email, Slack, Teams, whatever
+they'd normally use. Tell them which artifact reference (ticket key, or
+"none yet") to mention when they do.
+
 ## Output your artifact
 
 Write the markdown artifact as shown in Phase 5 above. Then:
@@ -173,4 +210,6 @@ Write the markdown artifact as shown in Phase 5 above. Then:
 ## Next
 
 Report which stakeholders remain and what the sharpest unresolved conflict is.
+If you produced a hand-off packet, say so and tell them to send it on now —
+don't wait for `feature-charter` to notice the interview never came back.
 When interviews saturate, run `feature-charter`.
