@@ -65,6 +65,17 @@ Example output when a config override under-serves an agent:
     ! agent 'planner' expects complex reasoning but 'haiku' offers simple
 ```
 
+## Agents skopos doesn't render
+
+The user's own agents (see [docs/custom-agents.md](custom-agents.md)) carry
+whatever `model:` their file declares. skopos does not resolve it, map it
+through a tier, or change it — so advisories for them say only that the
+declared model's tool-use capability looks light for the tools the agent lists,
+and say plainly that the file is the user's. When the declared model isn't in
+the registry, skopos stays silent: their platform may well know a model skopos
+doesn't. `skopos models check` reports these separately from the agents it
+renders.
+
 ## Full compatibility matrix
 
 Advisories above only check the model each target currently resolves. To see

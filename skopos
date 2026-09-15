@@ -11,6 +11,7 @@
 const path = require('path');
 const {
   SKOPOS_VERSION, runInstall, runVerify, runUninstall, runStatus, runSourcesSync,
+  runAgentsList, runAgentsShow, runAgentsAdopt, runAgentsIgnore,
   runModelsList, runModelsCheck, runModelsSignal, runModelsMatrix,
   runSorAuth, runSorTest, runSorPublish, runSorList, runSorRead,
 } = require('./lib/commands');
@@ -30,6 +31,15 @@ function parseArgs(argv) {
     else if (a === '--force') args.force = true;
     else if (a === '--target') args.target = argv[++i];
     else if (a === '--family') args.family = argv[++i];
+    else if (a === '--json') args.json = true;
+    else if (a === '--summon') args.summon = argv[++i];
+    else if (a === '--role') args.role = argv[++i];
+    else if (a === '--tags') args.tags = argv[++i].split(',').map((t) => t.trim()).filter(Boolean);
+    else if (a === '--prefer') args.prefer = true;
+    else if (a === '--no-prefer') args.prefer = false;
+    else if (a === '--hide') args.hide = true;
+    else if (a === '--show') args.hide = false;
+    else if (a === '--undo') args.undo = true;
     else if (a === '--help' || a === '-h') args.help = true;
     else args._.push(a);
   }
@@ -54,8 +64,19 @@ Commands:
       Check installed files against the lock. Exit 2 on drift. For files skopos
       only holds a fenced block in, only the block content is checked.
   status
-      Version, targets, sources + pinned SHAs, content counts, drift, and any
-      pre-existing (user-owned) agents skopos leaves untouched.
+      Version, targets, sources + pinned SHAs, content counts, drift, your own
+      agents on the roster, and whether the installed roster is stale.
+  agents list [--target claude|copilot] [--json]
+      The effective delegation roster: skopos's own specialists plus the agents
+      you defined yourself, with role, model, tools and summon criterion.
+  agents show <name>
+      One agent in full, including any overlay recorded for it.
+  agents adopt <name> [--summon "..."] [--role observe|reason|deliver|review|domain]
+                      [--tags a,b] [--prefer|--no-prefer] [--hide|--show]
+      Record routing metadata for an agent in YOUR skopos config. Never edits
+      the agent's own file. Run \`skopos update\` afterwards to re-render.
+  agents ignore <name> [--undo]
+      Keep an agent off the roster (agents.exclude). Its file is untouched.
   uninstall [--dry-run]
       Remove managed files, strip SKOPOS:MANAGED fences, restore snapshots.
       Your config.json survives.
@@ -84,6 +105,17 @@ interview, then ./skopos update.`;
 function say(lines) { console.log(lines.filter((l) => l !== null).join('\n')); }
 function fail(msg) { console.error(`error: ${msg}`); process.exit(1); }
 
+function agentLines(a) {
+  const tools = a.tools ? a.tools.join(', ') : 'inherited';
+  const star = a.prefer ? c.green(' ★ preferred') : '';
+  const warn = a.summon ? '' : c.yellow(' ⚠ no stated purpose — Skopos will not route to it on a guess');
+  return [
+    `    ${c.cyan(a.name)} ${c.dim(`— ${a.role} · ${a.model || 'model unset'} · ${tools}`)}${star}${warn}`,
+    `      ${a.summon || c.dim('(no summon criterion)')}`,
+    a.managed ? null : `      ${c.dim(a.path)}`,
+  ];
+}
+
 function reportInstall(r, cmd) {
   const label = { install: 'install', update: 'update' }[cmd] || r.mode;
   const statusText = r.dryRun
@@ -100,13 +132,23 @@ function reportInstall(r, cmd) {
   lines.push(fmt.keyValue('targets', r.targets.join(', ') || 'none'));
   lines.push(fmt.keyValue('skills', `${r.skills.length} → ~/.agents/skills (${r.skills.join(', ') || '-'})`));
   lines.push(fmt.keyValue('templates', `${r.templates.length} → ~/.agents/templates (${r.templates.join(', ') || '-'})`));
-  lines.push(fmt.keyValue('agents', `${r.agents.length} per target (${r.agents.join(', ') || '-'})`));
+  const skippedAgents = Object.entries(r.agentsSkipped || {});
+  const perTarget = skippedAgents.length ? 'planned' : 'per target';
+  lines.push(fmt.keyValue('agents', `${r.agents.length} ${perTarget} (${r.agents.join(', ') || '-'})`));
+  for (const [t, names] of skippedAgents) {
+    lines.push(fmt.keyValue('', c.dim(`↳ ${t}: ${names.join(', ')} not installed — you define your own`)));
+  }
 
   const ch = r.changes;
   lines.push(fmt.keyValue('files', `${r.managedCount} managed (${ch.added} new, ${ch.updated} updated, ${ch.removed} pruned), ${r.fenced.length} fenced block(s), ${r.links.length} compat link(s)`));
 
   if (r.snapshotted.length) lines.push(fmt.keyValue('rollback', `${r.snapshotted.length} pre-existing file(s) snapshotted — \`skopos uninstall\` restores them.`));
-  if (r.preexisting.length) lines.push(fmt.keyValue('preserved', `(your own, untouched) ${r.preexisting.join(', ')}`));
+  if (r.userAgents.length) {
+    lines.push(fmt.keyValue('yours', `${r.userAgents.length} agent(s) on the roster, untouched (${r.userAgents.map((a) => a.name).join(', ')})`));
+  }
+  if (r.collisions.length) {
+    lines.push(fmt.keyValue('collisions', r.collisions.map((x) => `${x.name} (${x.path})`).join(', ')));
+  }
 
   if (!r.personalized) {
     lines.push('');
@@ -199,9 +241,20 @@ function main() {
         lines.push(fmt.keyValue('drift', driftTag));
       }
 
-      if (s.preexisting.length) {
+      if (s.userAgents.length) {
         lines.push('');
-        lines.push(fmt.keyValue('preserved', `(your own) ${s.preexisting.join(', ')}`));
+        lines.push(fmt.keyValue('yours', `${s.userAgents.length} agent(s) on the roster (untouched)`));
+        for (const a of s.userAgents) {
+          lines.push(`    ${c.cyan(a.name)} ${c.dim(`${a.role} · ${a.display}`)}`);
+        }
+      }
+
+      if (s.stale.length) {
+        const detail = s.stale
+          .map((x) => (x.added.length ? `${x.target}: ${x.added.join(', ')} not installed yet` : x.target))
+          .join('; ');
+        lines.push('');
+        lines.push(fmt.keyValue('roster', c.yellow(`stale — ${detail}. Run \`skopos update\`.`)));
       }
 
       if (s.warnings.length) {
@@ -212,6 +265,103 @@ function main() {
 
       say(lines);
       process.exit(0);
+    }
+
+    if (cmd === 'agents') {
+      const sub = args._[1] || 'list';
+
+      if (sub === 'list') {
+        const r = runAgentsList({ env, skoposRoot, target: args.target });
+        if (args.json) { console.log(JSON.stringify(r, null, 2)); process.exit(0); }
+
+        const lines = [];
+        lines.push(fmt.header('SKOPOS AGENTS', 'double'));
+        lines.push('');
+        lines.push(fmt.keyValue('scanned', r.targets.join(', ') || 'none'));
+        if (r.notScanned.length) lines.push(fmt.keyValue('not scanned', `${r.notScanned.join(', ')} (target not selected — pass --target to scan it)`));
+        lines.push('');
+        lines.push(c.bold('  skopos specialists — managed, rendered per target'));
+        for (const a of r.builtins) lines.push(...agentLines(a));
+        lines.push('');
+        lines.push(c.bold('  your agents — discovered, read-only, never written'));
+        if (!r.userAgents.length) {
+          lines.push(c.dim('    none found. Write one in ~/.claude/agents/<name>.md and run `skopos update`.'));
+        }
+        for (const a of r.userAgents) lines.push(...agentLines(a));
+
+        if (r.collisions.length) {
+          lines.push('');
+          lines.push(c.boldYellow('  ⚠ name collisions:'));
+          for (const x of r.collisions) lines.push(c.yellow(`    ! ${x.name} — ${x.path}`));
+        }
+        if (r.advisories.length) {
+          lines.push('');
+          lines.push(c.boldYellow(`  ⚠ model advisories (informational, ${r.advisories.length}):`));
+          for (const w of r.advisories) lines.push(c.yellow(`    ! ${w}`));
+        }
+        if (r.warnings.length) {
+          lines.push('');
+          lines.push(c.boldYellow(`  ⚠ Warnings (${r.warnings.length}):`));
+          for (const w of r.warnings) lines.push(c.yellow(`    ! ${w}`));
+        }
+        say(lines);
+        process.exit(0);
+      }
+
+      const name = args._[2];
+      if (!name) fail(`usage: skopos agents ${sub} <name>`);
+
+      if (sub === 'show') {
+        const r = runAgentsShow({ env, skoposRoot, name });
+        if (args.json) { console.log(JSON.stringify(r, null, 2)); process.exit(0); }
+        const a = r.agent;
+        const lines = [];
+        lines.push(fmt.header(`AGENT ${a.name.toUpperCase()}`, 'double'));
+        lines.push('');
+        lines.push(fmt.keyValue('origin', `${a.origin}${a.managed ? ' (managed by skopos)' : ' (yours — read-only to skopos)'}`));
+        lines.push(fmt.keyValue('role', a.role));
+        lines.push(fmt.keyValue('model', a.model || 'unset'));
+        lines.push(fmt.keyValue('tools', a.tools ? a.tools.join(', ') : 'inherited (unknown)'));
+        lines.push(fmt.keyValue('summon', a.summon || 'none stated'));
+        lines.push(fmt.keyValue('description', a.description || '-'));
+        if (a.path) lines.push(fmt.keyValue('file', a.path));
+        if (r.overlay) lines.push(fmt.keyValue('overlay', JSON.stringify(r.overlay)));
+        for (const w of r.advisories) lines.push(c.yellow(`  ! ${w}`));
+        say(lines);
+        process.exit(0);
+      }
+
+      if (sub === 'adopt') {
+        const r = runAgentsAdopt({
+          env, skoposRoot, name,
+          summon: args.summon, role: args.role, tags: args.tags,
+          prefer: args.prefer, hide: args.hide,
+        });
+        say([
+          c.boldGreen(`✔ recorded routing metadata for '${r.name}'`),
+          '',
+          fmt.keyValue('written to', r.path),
+          fmt.keyValue('overlay', JSON.stringify(r.overlay)),
+          '',
+          c.dim(`  The agent's own file was not touched. Run \`skopos update\` to re-render the roster.`),
+        ]);
+        process.exit(0);
+      }
+
+      if (sub === 'ignore') {
+        const r = runAgentsIgnore({ env, skoposRoot, name, undo: args.undo });
+        say([
+          c.boldGreen(r.excluded ? `✔ '${r.name}' will be kept off the roster` : `✔ '${r.name}' is back on the roster`),
+          '',
+          fmt.keyValue('agents.exclude', r.exclude.join(', ') || 'none'),
+          fmt.keyValue('written to', r.path),
+          '',
+          c.dim('  The agent\'s own file was not touched. Run `skopos update` to re-render.'),
+        ]);
+        process.exit(0);
+      }
+
+      fail(`unknown agents subcommand: ${sub} (known: list, show, adopt, ignore)`);
     }
 
     if (cmd === 'uninstall') {
@@ -348,6 +498,15 @@ function main() {
           const tag = res.warnings.length ? c.boldYellow('⚠') : c.green('✔');
           lines.push(`  ${tag} [${res.target}] ${res.agent} → ${res.model || '(no model resolved)'}`);
           for (const w of res.warnings) lines.push(c.yellow(`      ! ${w}`));
+        }
+        if (r.userAgents.length) {
+          lines.push('');
+          lines.push(c.dim('  Your own agents — skopos neither resolves nor changes their model:'));
+          for (const a of r.userAgents) {
+            const tag = r.userAdvisories.some((w) => w.includes(`'${a.name}'`)) ? c.boldYellow('⚠') : c.green('✔');
+            lines.push(`  ${tag} [yours] ${a.name} → ${a.model || '(no model declared)'}`);
+          }
+          for (const w of r.userAdvisories) lines.push(c.yellow(`      ! ${w}`));
         }
         lines.push('');
         lines.push(r.warnings.length

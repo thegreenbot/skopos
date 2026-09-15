@@ -1,6 +1,7 @@
 ---
 name: reviewer
 description: Reviews a diff for correctness, test coverage, and convention adherence. Ranked findings, each anchored file:line. Does not fix.
+role: review
 model: smart
 tools: [read, grep, glob, shell]
 summon: A diff exists (branch, staged changes, or PR) and needs judgement before it ships.

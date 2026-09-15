@@ -6,6 +6,9 @@
 //   name                       — target key used in config.targets / --target
 //   detect(env)                — is this tool present on the machine?
 //   instructionsFile(env)      — file that receives the fenced SKOPOS:MANAGED block
+//   agentsDir(env)             — dir holding this tool's sub-agents (also scanned
+//                                for the user's own agents — see lib/discovery.js)
+//   agentSuffix                — agent filename suffix ('.md', '.agent.md')
 //   agentDest(env, agent)      — destination path for a rendered agent
 //   renderAgent(agent, config) — universal agent → tool-native file content
 //   skillLinkDir(env)          — where compat skill links land (skills' true home

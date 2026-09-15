@@ -31,8 +31,16 @@ module.exports = {
     return path.join(env.claudeDir, 'CLAUDE.md');
   },
 
+  // Where this tool keeps its sub-agents, and the file suffix it uses. Both are
+  // needed by lib/discovery.js to find the user's *own* agents in the same dir.
+  agentSuffix: '.md',
+
+  agentsDir(env) {
+    return path.join(env.claudeDir, 'agents');
+  },
+
   agentDest(env, agent) {
-    return path.join(env.claudeDir, 'agents', `${agent.name}.md`);
+    return path.join(this.agentsDir(env), `${agent.name}${this.agentSuffix}`);
   },
 
   renderAgent(agent, config) {

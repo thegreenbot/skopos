@@ -50,6 +50,7 @@ Copilot keeps `tools:` and resolves via `models.copilot` or strips).
 ---
 name: auditor
 description: What it does — also used as the roster's summon criterion.
+role: review            # observe | reason | deliver | review | domain (optional)
 model: smart            # tier: smart | fast (or a literal model name)
 tools: [read, grep, glob]
 summon: One line for the persona roster (optional; falls back to description).
@@ -57,6 +58,10 @@ summon: One line for the persona roster (optional; falls back to description).
 
 System prompt body, tool-agnostic.
 ```
+
+This is also the format skopos *reads* from the user's own agent directories.
+Agents found there are advertised in the roster and never written — see
+[docs/custom-agents.md](custom-agents.md).
 
 ### Templates
 
@@ -90,7 +95,11 @@ sections short — they live in every session's context.
 
 Highest first:
 
-1. the user's own unmanaged files — never touched;
+1. the user's own unmanaged files — never touched. A user agent whose name the
+   catalog also claims is resolved by `agents.onCollision`, which defaults to
+   `user-wins`: the managed agent is skipped for that target and the user's
+   file is left exactly as it is. Enterprise forks that need the approved agent
+   to win set `agents.onCollision: "catalog-wins"` in `config.defaults.json`;
 2. templates declared inline in `config.templates` (the skopos-setup interview
    writes these for gaps the shipped defaults don't cover);
 3. sources, in config order;
