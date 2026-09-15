@@ -58,6 +58,12 @@ the one that pays:
 | **Cheapest disproof** | What is the fastest, smallest thing that would show this is false? |
 | Blast radius | If it's false and we find out after building: what has to be redone? |
 
+Interviews now capture **cheapest disproof** and **blast radius** in the
+stakeholder's own answer. Carry those across verbatim — a disproof the person
+who holds the assumption named is worth more than one you invented. Where an
+interview left either field empty, it will appear in that interview's open
+questions; fill it here, and say that you did.
+
 Rank by `blast radius × uncertainty`. The top one or two drive the spike in
 `feature-plan` — you buy down risk by testing assumptions early, not by
 building carefully.

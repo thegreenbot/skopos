@@ -123,7 +123,9 @@ Before appending, read the existing lessons:
 A lesson at `Seen: 3×` has outgrown a document. Recommend promoting it into
 the system itself so it can't be forgotten:
 
-- a probe question added to the `feature-interview` bank;
+- a probe question added to the `feature-interview` bank — the prior its
+  freeform loop consults when a thread runs dry or a coverage slot is still
+  empty, so the lesson gets asked without scripting the interview;
 - a standing entry in the negative-scenario list in `feature-eval`;
 - a durable fact in the `SKOPOS:USER-FACTS` fence, or a rule in an enterprise
   source's `instructions/` if it applies across the whole org.

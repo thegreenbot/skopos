@@ -59,10 +59,49 @@ charter, in the open, with a named owner for each decision.
 Three interviews is the usual saturation point. Stop when a new interview
 stops producing new assumptions or new conflicts.
 
+## How a single interview runs
+
+There is no question script. A script cannot ask the second question, and the
+second question is where the assumption actually surfaces.
+
+Each interview opens with one unanchored question, then runs a loop: read the
+answer, decide what it contains, ask one clarifying question. Answers are read
+for six things — a vague qualifier, an unverifiable claim of done, a new
+assumption, a scope boundary, a collision with an earlier interview, or an
+unknown. Each routes to a different follow-up. Collisions are held back for
+the divergence pass so they don't anchor the rest of the conversation.
+
+What keeps freeform from running forever is a **coverage contract**: outcome,
+observable completion, verification surface, assumptions (with cheapest
+disproof and blast radius), non-goals, disagreements, open questions. Every
+slot ends up filled or explicitly unknown *with a named owner* — an unknown
+closes a thread rather than leaving one open.
+
+An interview concludes when any of three conditions holds:
+
+- **coverage** — every slot filled or owned;
+- **saturation** — two consecutive answers producing no new assumption, no new
+  verification surface, no new non-goal (the same test applied to whole
+  interviews, one level down);
+- **budget** — the time stated up front is spent, or the stakeholder calls it.
+
+Then the read-back, which is a test rather than a ritual: corrections that open
+a new load-bearing assumption buy one more round; cosmetic corrections mean
+write the artifact. Because interviews are async and portable, concluding
+`provisional` — unfilled slots carried as owned open questions, a later session
+appending to the same file — is a legitimate ending. Concluding by silence is
+not.
+
+The probe bank still exists, demoted from script to **prior**: consulted when a
+thread runs dry or a slot is still empty, and the place `feature-retro`
+deposits a lesson that was knowable at interview. That write-back is what makes
+the loop compound, so the bank outlives the script that used to wrap it.
+
 ## The assumption ledger
 
 The core artifact. Every assumption gets four fields, and the third is the one
-teams skip:
+teams skip — which is why the interview now chases it while the stakeholder is
+still in the room, rather than leaving the charter to reconstruct it:
 
 - **Assumption** — what we're taking as true without checking.
 - **Held by** — who believes it, and who disagrees.
