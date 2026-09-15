@@ -68,8 +68,7 @@ route delegation that isn't one of the named specialists.
 ### Validation
 
 `skopos config validate` checks the `models` block and distinguishes blocking
-errors from advisories. `skopos install` and `skopos update` apply the same
-rules, so a config that validates is a config that installs:
+errors from advisories:
 
 | Condition | Result |
 |---|---|
@@ -89,6 +88,14 @@ moment the agent is re-enabled.
 
 The typo case is an error precisely because it is *not* inert in intent: the
 user asked for a specific model and would silently not get it.
+
+`skopos install` and `skopos update` report this whole table as **warnings** and
+never block on it. Nothing here can produce a bad render — an override key that
+matches no agent is dead config either way — so a dead key is worth surfacing
+but not worth failing a global install over. `config validate` is the strict
+pass: run it (or wire it into CI) when you want a typo to be a hard failure.
+The two messages stay distinct in both commands, so the warning still tells you
+which case you are looking at.
 
 Family mismatches are errors in both the tier maps and the target-keyed
 overrides, because both are target-scoped by construction — naming another

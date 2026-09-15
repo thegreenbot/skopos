@@ -258,12 +258,14 @@ test('copilot agents render with a model key out of the box', (t) => {
   assert.match(read(path.join(env.copilotDir, 'agents', 'planner.agent.md')), /^model: gpt-5$/m);
 });
 
-test('install fails on a per-agent override naming an agent that exists nowhere', (t) => {
+test('install warns, without blocking, on an override naming an agent that exists nowhere', (t) => {
   const { env } = makeSandbox(t);
   writeConfig(env, baseConfig({ models: { agents: { implementor: 'haiku' } } }));
-  // A typo silently drops the user's intent, so it blocks — same line as
-  // `config validate` draws, and the same as any other invalid config.
-  assert.throws(() => install(env), /models\.agents\.implementor names no agent in the current plan/);
+  // The key is inert either way, so it never fails an install; `config validate`
+  // is where a typo is a hard error.
+  const r = install(env);
+  assert.ok(r.warnings.some((w) => w.includes('models.agents.implementor names no agent in the current plan')));
+  assert.match(read(path.join(env.claudeDir, 'agents', 'implementer.md')), /^model: sonnet$/m);
 });
 
 test('install warns, without blocking, when catalog.agents excludes an overridden agent', (t) => {
