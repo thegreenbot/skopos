@@ -258,12 +258,24 @@ test('copilot agents render with a model key out of the box', (t) => {
   assert.match(read(path.join(env.copilotDir, 'agents', 'planner.agent.md')), /^model: gpt-5$/m);
 });
 
-test('install warns on a per-agent override naming an agent that does not exist', (t) => {
+test('install fails on a per-agent override naming an agent that exists nowhere', (t) => {
   const { env } = makeSandbox(t);
   writeConfig(env, baseConfig({ models: { agents: { implementor: 'haiku' } } }));
-  const r = install(env); // inert key — surfaced, but never fails the install
-  assert.ok(r.warnings.some((w) => w.includes('models.agents.implementor names no agent in the current plan')));
-  assert.match(read(path.join(env.claudeDir, 'agents', 'implementer.md')), /^model: sonnet$/m);
+  // A typo silently drops the user's intent, so it blocks — same line as
+  // `config validate` draws, and the same as any other invalid config.
+  assert.throws(() => install(env), /models\.agents\.implementor names no agent in the current plan/);
+});
+
+test('install warns, without blocking, when catalog.agents excludes an overridden agent', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({
+    catalog: { skills: 'all', agents: ['scout'], templates: 'all' },
+    models: { agents: { sentinel: 'opus' } },
+  }));
+  const r = install(env); // the agent is real, just not installed — inert, not wrong
+  assert.ok(r.warnings.some((w) => w.includes("models.agents.sentinel has no effect — agent 'sentinel' exists")));
+  assert.ok(fs.existsSync(path.join(env.claudeDir, 'agents', 'scout.md')));
+  assert.ok(!fs.existsSync(path.join(env.claudeDir, 'agents', 'sentinel.md')));
 });
 
 test('install warns, without blocking, on a model it does not recognize', (t) => {

@@ -6,8 +6,9 @@ about can do. The registry serves both routing layers described in
 
 - **Directive** — `family` participates in resolution. A bare model name in
   `models.agents` applies only to targets whose model family matches it, and
-  `skopos config validate` rejects a target-keyed override that names a model
-  from the wrong family. A model that is *not* in this registry has no family
+  `skopos config validate` rejects any *target-scoped* slot that names a model
+  from the wrong family — both the tier maps (`models.claude.smart`) and the
+  target-keyed overrides. A model that is *not* in this registry has no family
   to check, so it applies everywhere and validation only warns.
 - **Advisory** — `reasoningDepth` and `toolUse` back the capability warnings
   below, and `family` plus `costTier` build the fallback chains behind

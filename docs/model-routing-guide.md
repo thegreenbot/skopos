@@ -68,17 +68,33 @@ route delegation that isn't one of the named specialists.
 ### Validation
 
 `skopos config validate` checks the `models` block and distinguishes blocking
-errors from advisories:
+errors from advisories. `skopos install` and `skopos update` apply the same
+rules, so a config that validates is a config that installs:
 
 | Condition | Result |
 |---|---|
-| Override names an agent that isn't in the plan (typo) | error |
+| Override names an agent that exists nowhere (typo) | error |
 | Override object uses an unknown target key | error |
 | Target-keyed override names a model from another family | error |
+| Tier map names a model from another family | error |
+| Override names a real agent that `catalog.agents` excludes | warning, not blocking |
 | Model is not in the capability registry | warning, not blocking |
 
-An unregistered model is deliberately only a warning — it renders through as-is,
-Skopos just can't advise on it.
+The two warnings are the cases where nothing is actually wrong. An **unregistered
+model** renders through as-is; Skopos just can't advise on it, which is what
+keeps custom and preview model IDs working. An **override on an excluded agent**
+is inert rather than mistaken — narrowing `catalog.agents` without pruning
+`models.agents` is a normal thing to do, and the key starts working again the
+moment the agent is re-enabled.
+
+The typo case is an error precisely because it is *not* inert in intent: the
+user asked for a specific model and would silently not get it.
+
+Family mismatches are errors in both the tier maps and the target-keyed
+overrides, because both are target-scoped by construction — naming another
+family's model there can only ever render a value that target cannot use. The
+bare string form in `models.agents` is the one place a cross-family name is
+tolerated, and there it is skipped rather than rejected (see above).
 
 `skopos models check` runs the capability advisor (see
 `docs/model-capabilities.md`) against every one of these resolutions and
