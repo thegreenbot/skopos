@@ -515,6 +515,40 @@ The charter reconciliation logic is source-agnostic: if it has the right frontma
 
 `skopos sor read` and `skopos sor list` **ship in Phase 1** (they are 40 lines given the client already exists, and `publish` needs `list`/`read` internally for idempotency anyway). Wiring them into `feature-interview`'s opening phase is Phase 3 — the CLI surface is available early so Phase 3 is a SKILL.md change with no code.
 
+### 5.8 Self-contained hand-off packets (zero tooling on the receiving end)
+
+§5.5 covers a stakeholder whose *own* AI tool already has the
+feature-interview skill installed — they paste a transcript as context and
+carry on with instructions they already have. It does not cover a
+stakeholder with nothing installed at all: no skopos, no skill, often no
+system-of-record access either (a customer, a contractor, an executive on a
+generic chat assistant).
+
+For that case, `feature-interview` can produce a second artifact instead of
+(or alongside) the normal one: `catalog/templates/interview-handoff.md`,
+rendered to `docs/skopos/features/<slug>/interviews/skopos--<slug>--interview-handoff--vNNN.md`.
+Unlike the normal interview artifact, this file inlines the interview rules,
+phase structure, and read-back-then-write format, plus the full text of
+every prior interview for the feature. Pasted into any AI chat interface —
+or read directly by a person — it is enough on its own to run the
+interview; nothing else needs to be installed.
+
+It closes by asking the new stakeholder to choose one of two paths, mirroring
+§5.3's "always" rule that the next stakeholder may not share a
+system-of-record:
+
+1. Add the finished interview to the system-of-record themselves, the same
+   way the rest of the feature's interviews are stored — if they have
+   access.
+2. Save the result and send it back to whoever handed them the packet, by
+   email, Slack, Teams, or whatever channel they'd normally use — if they
+   don't.
+
+This is a SKILL.md and template change, no code: the AI conducting the
+original interview assembles the packet by reading the same local files
+`feature-interview` already reads in "Before you ask anything," and the
+receiving AI needs no skopos install to act on it.
+
 ---
 
 ## 6. Directory structure

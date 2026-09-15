@@ -21,7 +21,7 @@ test('catalog content is discovered', (t) => {
   const templateNames = plan.templates.map((t) => t.name).sort();
   assert.deepEqual(templateNames, [
     'code-review-report', 'feature-charter', 'feature-eval', 'feature-plan',
-    'feature-retro', 'pr-description', 'spec-sheet',
+    'feature-retro', 'interview-handoff', 'pr-description', 'spec-sheet',
   ]);
   assert.ok(plan.templates.every((t) => t.origin === 'catalog'));
 });

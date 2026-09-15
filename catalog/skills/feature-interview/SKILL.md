@@ -18,6 +18,7 @@ each writes a standalone artifact that the next interview reads.
 
 ```
 docs/skopos/features/<slug>/interviews/NN-<role>-<name>.md
+docs/skopos/features/<slug>/interviews/skopos--<slug>--interview-handoff--vNNN.md   (see "Handing off" below, only when needed)
 ```
 
 If the repo already keeps this material somewhere else, follow the repo's
@@ -25,16 +26,23 @@ convention instead and say so in your first message.
 
 ## Before you ask anything
 
-1. Read `docs/skopos/GUIDANCE.md` if it exists — past lessons often name the
+1. Establish: feature slug, who you're interviewing, their role.
+2. Check `docs/skopos/features/<slug>/interviews/` for a file for this same
+   stakeholder with `skopos-interview-status: in-progress` in its
+   frontmatter. If one exists, this is a **resume**, not a fresh start — see
+   "Picking up a cut-off interview" below, and skip straight to it once
+   you've confirmed it's the same person continuing.
+3. Read `docs/skopos/GUIDANCE.md` if it exists — past lessons often name the
    question this project always forgets to ask. Ask it.
-2. Read every existing interview under this feature's `interviews/`.
-3. If your config has `systemOfRecord.enabled: true` and `systemOfRecord.publish.interviews: true`,
+4. Read every existing **complete** interview under this feature's
+   `interviews/` (skip other stakeholders' in-progress drafts — unfinished
+   answers aren't reliable context yet).
+5. If your config has `systemOfRecord.enabled: true` and `systemOfRecord.publish.interviews: true`,
    try to fetch prior interviews from the system-of-record (Jira, GitHub, etc.). Report what you found.
    If that fails and `onFailure: fail`, stop and ask them to paste prior interviews manually. If `warn`,
    continue with manual fallback.
-4. Ask if they have prior interview artifacts (from another AI tool, manual notes, etc.) to paste in.
+6. Ask if they have prior interview artifacts (from another AI tool, manual notes, etc.) to paste in.
    If yes, read them as context before proceeding.
-5. Establish: feature slug, who you're interviewing, their role.
 
 **Order matters.** Interview the direction-setter first (product owner or
 whoever owns the outcome), then delivery (tech lead), then the wider
@@ -55,6 +63,51 @@ when you hit a number.
   it would look like concretely.
 - **Silence is data.** If they don't know, record "unknown" rather than
   guessing on their behalf.
+
+## Checkpointing — interviews may span sessions
+
+Don't wait until the end to write anything. A single sitting can get cut off
+by a context limit, a closed tab, or the stakeholder just running out of
+time — and nothing before Phase 5 is currently saved.
+
+As soon as you've established who you're interviewing (step 1 above), write
+a draft to `docs/skopos/features/<slug>/interviews/NN-<role>-<name>.md`:
+
+```markdown
+---
+skopos-artifact: interview
+skopos-feature: <slug>
+skopos-interview-status: in-progress
+skopos-interview-phase: 0
+skopos-updated: <ISO timestamp>
+---
+
+# Interview NN — <Name>, <Role> (in progress)
+Feature: <slug> · Date: <YYYY-MM-DD> · Interviewer: skopos
+```
+
+Update it after **every phase** — bump `skopos-interview-phase` to the
+number just completed, refresh `skopos-updated`, and add whatever that
+phase captured using the section headings from Phase 5's template (partial
+sections are fine; a stakeholder resuming next week should see exactly
+where they left off). Phase 5 itself replaces `in-progress` with `complete`
+and drops the phase counter — see "Output your artifact."
+
+## Picking up a cut-off interview
+
+You detected this in "Before you ask anything." Once confirmed:
+
+1. Read the draft back to them in a couple of sentences — not a full
+   replay, just enough to place them: *"Last time you'd told me <what they
+   said so far>, and we'd gotten through the role probes. Want to keep
+   going from the evaluation surface, or has anything changed since?"*
+2. Resume at the phase **after** `skopos-interview-phase`. Never re-ask
+   Phase 1's opening question if it's already answered — the anchoring
+   concern only applies the first time.
+3. If they'd rather restart clean, let them — overwrite the draft and begin
+   at Phase 1 as normal.
+4. Everything else (checkpointing, Phase 5, output) proceeds exactly as if
+   this were one sitting.
 
 ## Phase 1 — the opening question (unanchored)
 
@@ -119,9 +172,18 @@ conflict that resurfaces during review.
 Read your captured assumptions back to them in one short list and ask what's
 wrong. People correct a list far more readily than they volunteer detail.
 
-Then write the artifact:
+Then write the artifact, replacing the checkpointed draft in place — same
+filename, `skopos-interview-status` now `complete`, `skopos-interview-phase`
+dropped:
 
 ```markdown
+---
+skopos-artifact: interview
+skopos-feature: <slug>
+skopos-interview-status: complete
+skopos-updated: <ISO timestamp>
+---
+
 # Interview NN — <Name>, <Role>
 Feature: <slug> · Date: <YYYY-MM-DD> · Interviewer: skopos
 
@@ -152,6 +214,64 @@ Feature: <slug> · Date: <YYYY-MM-DD> · Interviewer: skopos
 Keep assumption IDs unique **per feature**, not per interview — later
 artifacts reference `A3` and must mean one thing.
 
+## Handing off without skopos or system-of-record access
+
+Copy-paste and download (below) are enough when the next stakeholder has
+*some* AI tool with the feature-interview skill installed — they read the
+transcript, already know the phases, and carry on. They are not enough when
+the next stakeholder has nothing installed at all: a customer, a contractor,
+an executive with only a browser tab open to a generic chat assistant. That
+person's AI needs the interview instructions themselves, not just a
+transcript to react to.
+
+Ask, before you finish: **"Does whoever goes next have skopos, or at least
+this skill, available to them?"** If no (or you don't know), build a
+hand-off packet in addition to the normal artifact:
+
+1. Use the `interview-handoff` template (`~/.agents/templates/interview-handoff.md`,
+   shipped by skopos and shown/overridable during `skopos-setup`).
+2. Fill in the feature slug and your own name/contact as "handed off by" —
+   that's who the packet tells the next person to send their result back to.
+3. Under "Prior interviews," paste the **full text** of every interview
+   under this feature's `interviews/` folder, including the one you just
+   wrote — not a summary. The next person's AI has no repo access; whatever
+   isn't in the packet doesn't exist for them.
+4. Leave the next stakeholder's name and role blank — the packet's opening
+   question establishes both.
+5. Write it to `docs/skopos/features/<slug>/interviews/skopos--<slug>--interview-handoff--vNNN.md`,
+   incrementing the version if a packet already exists for this feature.
+
+The packet is self-contained: interview rules, phases, and the
+read-back-then-write artifact format are inline, so any AI chat interface
+can run it from a paste with nothing installed. It closes by asking the new
+stakeholder to either add their finished interview to the system-of-record
+themselves (same as the normal process, if they have access) or save it and
+send it back to whoever handed it to them — email, Slack, Teams, whatever
+they'd normally use. Tell them which artifact reference (ticket key, or
+"none yet") to mention when they do.
+
+## Revisiting a completed interview
+
+Someone comes back after the fact — a follow-up thought, a correction, new
+information that changes an answer. Don't renumber and don't create a new
+`interviews/` entry for the same stakeholder; that fragments one person's
+view across files the charter has to reconcile against itself.
+
+Instead, open their existing `complete` artifact and append:
+
+```markdown
+## Amendment — <YYYY-MM-DD>
+> <what changed, in their words>
+- Affects: <section/assumption ID this touches, e.g. "A3">
+- Why: <what prompted the correction>
+```
+
+Leave the original answer untouched above it — an amendment is a recorded
+delta, not a silent rewrite, for the same reason disagreements between
+stakeholders are recorded rather than smoothed over. Bump `skopos-updated`.
+If the amendment reverses something `feature-charter` already reconciled,
+say so — that charter's signoff may need revisiting.
+
 ## Output your artifact
 
 Write the markdown artifact as shown in Phase 5 above. Then:
@@ -173,4 +293,6 @@ Write the markdown artifact as shown in Phase 5 above. Then:
 ## Next
 
 Report which stakeholders remain and what the sharpest unresolved conflict is.
+If you produced a hand-off packet, say so and tell them to send it on now —
+don't wait for `feature-charter` to notice the interview never came back.
 When interviews saturate, run `feature-charter`.

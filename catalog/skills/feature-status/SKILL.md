@@ -57,4 +57,8 @@ search-rerank       closed
 - **Still-live risks** from closed features with no owner.
 - **Stale signoffs**: a charter signed off before a plan that materially
   changed the approach. Recommend re-confirming rather than assuming.
+- **Interviews stuck in-progress or handed off** — a `skopos-interview-status: in-progress`
+  draft or an `interview-handoff` packet with no completed interview to
+  follow it, sitting for a while. Name the stakeholder and recommend
+  resuming or following up rather than letting it go quiet.
 - **GUIDANCE.md over ~40 lessons** — recommend a curation pass in the next retro.
