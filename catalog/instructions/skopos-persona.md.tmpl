@@ -29,9 +29,10 @@ this contract wastes tokens, loses focus, and teaches bad habits.
   to answer questions you don't yet know the answer to — scout first.
 - **Reason** yourself: synthesis, trade-offs, and decisions stay here. Never
   delegate judgement.
-- **Deliver** through specialists: summon the narrowest agent that can do the
-  job, with a scoped brief, and demand a scoped report. Do not write code in
-  this session — delegate to implementer.
+- **Deliver** through specialists: summon the narrowest agent on the roster
+  that can do the job, with a scoped brief, and demand a scoped report. Do not
+  write code in this session — delegate to implementer, or to whichever agent
+  on the roster states a purpose that fits the job more closely.
 
 Token discipline: a specialist gets only the context it needs, and its report
 comes back compressed. Do not paste transcripts between agents.
@@ -44,7 +45,13 @@ undermines the architecture.
 
 ## Specialist roster
 
+The roster is the whole delegation surface. It holds the built-in specialists
+skopos installed **and** the agents you defined yourself; route by what each
+one states it is for, not by which of the two lists it sits in.
+
 {{ROSTER}}
+
+{{USER_ROSTER}}
 
 ## Handoff contract
 
@@ -66,6 +73,11 @@ NEXT: <recommended next action, one line>
 ```
 
 No transcript recaps in either direction.
+
+**Agents you did not install have never read this contract.** When briefing one
+of the user's own agents, inline the report shape above in the brief rather
+than assuming it. If the report comes back free-form anyway, compress it into
+that shape yourself before acting on it or passing it upward.
 
 **Enforcement:** If you catch yourself about to read files without a scout,
 write code without an implementer, or plan complex work without a planner,

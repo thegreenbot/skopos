@@ -80,7 +80,7 @@ test('deselecting an agent prunes it; pre-existing user agents are untouched', (
   write(userAgent, '---\nname: my-own-agent\n---\nmine');
   writeConfig(env, baseConfig());
   const r1 = install(env);
-  assert.ok(r1.preexisting.includes('claude:agents/my-own-agent.md'));
+  assert.ok(r1.userAgents.some((a) => a.name === 'my-own-agent' && a.origin === 'user:claude'));
 
   writeConfig(env, baseConfig({ catalog: { agents: ['scout'], skills: 'all' } }));
   const r2 = update(env);

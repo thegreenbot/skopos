@@ -11,6 +11,8 @@ module.exports = {
   name: 'claude',                    // target key in config.targets / --target
   detect(env) {},                    // is the tool present? (used on first run)
   instructionsFile(env) {},          // file that receives the fenced managed block
+  agentsDir(env) {},                 // dir holding this tool's sub-agents
+  agentSuffix: '.md',                // agent filename suffix
   agentDest(env, agent) {},          // destination for one rendered agent
   renderAgent(agent, config) {},     // universal agent → tool-native file content
   skillLinkDir(env) {},              // where compat skill links land
@@ -24,6 +26,13 @@ against that agent's inferred capability requirements — see
 [docs/model-capabilities.md](model-capabilities.md). A new adapter should
 implement it with the same "per-agent override → tier map → tier/undefined"
 precedence claude/copilot use, so `skopos models check`/`matrix` cover it too.
+
+`agentsDir` and `agentSuffix` are what `lib/discovery.js` uses to find the
+*user's own* agents sitting in the same directory — everything there that
+skopos does not manage is read (never written) and advertised in the persona
+roster. An adapter that omits them falls back to `dirname(agentDest(...))` and
+`.md`; declaring them is clearer and lets a tool with a different convention
+participate. See [docs/custom-agents.md](custom-agents.md).
 
 `env` carries the resolved roots (`claudeDir`, `copilotDir`, `agentsDir`,
 `skoposHome`) — always env-overridable, never hardcode a home path.
@@ -54,5 +63,7 @@ signaling), see [docs/model-capabilities.md](model-capabilities.md) and
 - Never write outside the tool's own root.
 - The instructions file must tolerate the fence contract: skopos owns only the
   `SKOPOS:MANAGED` block, appends to existing files, and strips on uninstall.
-- Universal frontmatter keys an adapter doesn't project (`summon`, future
-  additions) are silently dropped, never passed through.
+- Universal frontmatter keys an adapter doesn't project (`summon`, `role`,
+  future additions) are silently dropped, never passed through.
+- Never write into a file in the tool's agents dir that skopos doesn't manage —
+  discovery classifies those as the user's, and they are read-only.

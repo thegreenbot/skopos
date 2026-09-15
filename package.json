@@ -7,6 +7,6 @@
   "engines": { "node": ">=18" },
   "scripts": {
     "test": "node --test \"test/*.test.js\"",
-    "test:stable": "node --test test/adapters.test.js test/config.test.js test/feedback-loop.test.js test/fence.test.js test/frontmatter.test.js test/integrations-base.test.js test/lifecycle.test.js test/manifest.test.js test/model-advisor.test.js test/model-capabilities.test.js test/model-compatibility.test.js test/model-preferences.test.js test/sources.test.js"
+    "test:stable": "node --test test/adapters.test.js test/agents-discovery.test.js test/config.test.js test/feedback-loop.test.js test/fence.test.js test/frontmatter.test.js test/integrations-base.test.js test/lifecycle.test.js test/manifest.test.js test/model-advisor.test.js test/model-capabilities.test.js test/model-compatibility.test.js test/model-preferences.test.js test/sources.test.js"
   }
 }

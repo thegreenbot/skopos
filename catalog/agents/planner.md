@@ -1,6 +1,7 @@
 ---
 name: planner
 description: Turns requirements plus scout reports into a phased implementation plan with concrete file paths. Never writes code.
+role: reason
 model: smart
 tools: [read, grep, glob]
 summon: Work that spans multiple files or steps and needs sequencing before anyone edits anything.

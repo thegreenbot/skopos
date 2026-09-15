@@ -33,6 +33,11 @@ plumbing: **you write exactly one file, `~/.skopos/config.json`** (respect
   "targets":  { "claude": true, "copilot": false },
   "models":   { "claude": { "smart": "opus", "fast": "sonnet" }, "copilot": {}, "agents": {} },
   "catalog":  { "skills": "all", "agents": "all", "templates": "all" },
+  "agents":   {
+    "discover": "auto", "dirs": [], "exclude": [], "onCollision": "user-wins",
+    "projectScoped": true, "maxRoster": 40,
+    "overlays": { "<agent-name>": { "summon": "", "role": "deliver", "tags": [], "prefer": false, "hide": false } }
+  },
   "compat":   { "skillLinks": "auto" },
   "templates": [ { "name": "", "description": "", "content": "" } ],
   "systemOfRecord": {
@@ -78,6 +83,38 @@ does that later.
 **5. Targets & models.** Which tools to enhance (claude / copilot — default to
 what's detected on the machine) and, only if the user cares, the model tier
 mapping (which model is "smart", which is "fast") per tool.
+
+**5b. Their own agents.** skopos discovers the sub-agents the user already
+wrote (`~/.claude/agents/`, `~/.copilot/agents/`) and puts them on the Skopos
+roster so work can be delegated to them. Run `skopos agents list` and show
+what was found. Their files are read-only to skopos — never edit one, and never
+offer to.
+
+For each discovered agent, the only thing that matters is whether Skopos can
+tell *when to summon it*. Look at the "Summon when" text:
+- If it already reads like a trigger ("A Postgres schema change needs to
+  ship"), leave it alone.
+- If it is vague ("helps with migrations") or missing, ask the user what job
+  it is for and what role it occupies (`observe` / `reason` / `deliver` /
+  `review` / `domain`), then record it with
+  `skopos agents adopt <name> --summon "..." --role <role>`. That writes an
+  overlay into their config; their agent file is untouched. Add `--prefer` only
+  if they want it to win ties against the built-in for that role.
+- Offer `skopos agents ignore <name>` for anything experimental or abandoned
+  that shouldn't clutter every session's context.
+
+Then, only if relevant:
+- **Extra directories** (`agents.dirs`) if they keep agents somewhere else,
+  e.g. a dotfiles repo. Absolute paths; verify with `ls` first.
+- **Collisions.** If `skopos agents list` reports a name collision, explain the
+  choice: `user-wins` (default — their file stays, the skopos agent is skipped
+  for that target) or `catalog-wins` (the skopos agent is authoritative; theirs
+  is snapshotted first). Enterprise users on a fork may already have this set.
+- **Turning it off** (`agents.discover: "off"`) if they'd rather keep their
+  agents out of the roster entirely.
+
+Any advisory printed about a discovered agent's declared model is
+informational — skopos does not resolve or change it. Relay it, don't act on it.
 
 **6. Templates.** skopos ships default templates for the workflow artifacts it
 produces — PR descriptions, code review reports, spec sheets, and the

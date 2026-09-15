@@ -1,6 +1,7 @@
 ---
 name: implementer
 description: Executes one scoped plan step with the smallest possible diff, runs the verification named in the plan, reports files changed.
+role: deliver
 model: fast
 tools: [read, grep, glob, edit, write, shell]
 summon: A plan step (or small, fully-specified change) is ready to be built.
