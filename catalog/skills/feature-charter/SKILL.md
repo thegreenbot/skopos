@@ -15,7 +15,18 @@ everybody can be held to. It is the contract; everything downstream cites it.
 ## Inputs
 
 Collect interviews from all sources:
-1. Local files under `docs/skopos/features/<slug>/interviews/`.
+1. Local files under `docs/skopos/features/<slug>/interviews/` — treat a
+   file as an interview unless its frontmatter says otherwise. Skip two
+   kinds explicitly: `skopos-interview-status: in-progress` drafts
+   (unfinished, not yet reconciled — see `feature-interview`'s
+   checkpointing) and `skopos-artifact: interview-handoff` packets (a
+   template for producing an interview, not one itself; its presence means
+   that stakeholder is still out for interview). Files with no frontmatter
+   at all are older interviews and count as complete. A
+   `skopos-interview-status: provisional` file **does** count — it concluded
+   with gaps rather than being abandoned. Carry its open questions into
+   *Known unknowns* with their owners intact, and say in the charter which
+   stakeholders were only provisionally interviewed.
 2. If `systemOfRecord.enabled: true`, fetch interviews from your configured system (Jira, GitHub, etc.).
    - Try to list all artifacts matching the feature slug.
    - If successful, show what you found and add them to the pool.

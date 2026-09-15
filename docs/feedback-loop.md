@@ -56,6 +56,19 @@ instead of agreement manufactured by anchoring.
 Disagreements are recorded, not smoothed. Reconciliation happens once, in the
 charter, in the open, with a named owner for each decision.
 
+"Asynchronous" also means a single stakeholder's own interview doesn't have
+to finish in one sitting. `feature-interview` checkpoints a draft after
+every phase and picks it back up where it left off in a later session
+instead of starting the opening question over — and a stakeholder can
+return after a completed interview to amend it, recorded as a dated
+addition rather than a silent rewrite of what they said the first time.
+
+Not every stakeholder has skopos, or any AI tool with the skill installed.
+For those, `feature-interview` can hand off a self-contained packet instead
+of a bare transcript — interview rules, phases, and every prior interview
+inlined in one file, usable from a paste into any AI chat with nothing set
+up. See `catalog/templates/interview-handoff.md`.
+
 Three interviews is the usual saturation point. Stop when a new interview
 stops producing new assumptions or new conflicts.
 
@@ -89,8 +102,11 @@ Then the read-back, which is a test rather than a ritual: corrections that open
 a new load-bearing assumption buy one more round; cosmetic corrections mean
 write the artifact. Because interviews are async and portable, concluding
 `provisional` — unfilled slots carried as owned open questions, a later session
-appending to the same file — is a legitimate ending. Concluding by silence is
-not.
+reopening the same file to close them — is a legitimate ending. That is a
+different state from a checkpointed `in-progress` draft: provisional means the
+interview concluded and was written up with gaps that have owners, not that it
+was cut off mid-phase. Concluding by silence is neither, and is never
+acceptable.
 
 The probe bank still exists, demoted from script to **prior**: consulted when a
 thread runs dry or a slot is still empty, and the place `feature-retro`

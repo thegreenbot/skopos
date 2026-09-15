@@ -71,7 +71,17 @@ The artifact format is universal — same Markdown in Jira, Copilot, local repo,
 - Product owner (Copilot) → receives artifact, pastes, interviews, downloads
 - Tech lead (skopos) → reads all interviews from Jira, creates charter
 
-See [docs/phase-1-technical-spec.md § 11](docs/phase-1-technical-spec.md#11-cross-tool-workflow-example) for a detailed walkthrough.
+That example still assumes the product owner's tool has the
+feature-interview skill installed. When the next stakeholder has **nothing**
+installed — no skopos, no skill, no system-of-record access — `feature-interview`
+can instead hand off a self-contained packet (`interview-handoff` template):
+one file with the interview instructions, every prior interview, and a
+questionnaire inlined, pasteable into any AI chat with nothing set up. It
+ends by asking them to add their result to the system-of-record themselves
+(if they can) or send it back to whoever handed it off, by email, Slack, or
+Teams (if they can't).
+
+See [docs/phase-1-technical-spec.md § 11](docs/phase-1-technical-spec.md#11-cross-tool-workflow-example) for a detailed walkthrough, and § 5.8 for the hand-off packet.
 
 ## Your files stay yours
 
