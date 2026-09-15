@@ -7,7 +7,7 @@ const {
   runInstall, runVerify, runUninstall, runStatus,
   runAgentsList, runAgentsShow, runAgentsAdopt, runAgentsIgnore,
 } = require('../lib/commands');
-const { discoverUserAgents, sanitizeLine } = require('../lib/discovery');
+const { discoverUserAgents, sanitizeLine, firstBodyLine } = require('../lib/discovery');
 const configLib = require('../lib/config');
 const lockLib = require('../lib/lock');
 const fence = require('../lib/fence');
@@ -221,6 +221,18 @@ test('sanitizeLine collapses, neutralizes and truncates without a trailing escap
   assert.equal(long.length, 200);
   assert.ok(long.endsWith('…'));
   assert.ok(!sanitizeLine(`${'x'.repeat(198)}|zz`).endsWith('\\…'));
+});
+
+test('trimming a long run of the trimmed character stays linear', () => {
+  // Both of these used to end in /x+$/ — an unbounded repetition anchored only
+  // at the end, retried from every start position, so quadratic in the run
+  // length (js/polynomial-redos). The inputs are lines out of an agent file.
+  const t0 = Date.now();
+  assert.ok(sanitizeLine(`${'a'.repeat(190)} ${'|'.repeat(200000)}`).endsWith('…'));
+  assert.equal(firstBodyLine(`${'*'.repeat(200000)}x`), 'x');
+  assert.equal(firstBodyLine(`# ${'_'.repeat(200000)}`), '');
+  const ms = Date.now() - t0;
+  assert.ok(ms < 2000, `trimming 200k-char runs took ${ms}ms — the quadratic path is back`);
 });
 
 test('the roster is capped in count, with a warning naming the knob', (t) => {
