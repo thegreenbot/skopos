@@ -31,7 +31,7 @@ plumbing: **you write exactly one file, `~/.skopos/config.json`** (respect
   "repos":    [ { "name": "", "path": "/abs/path", "description": "", "remote": "" } ],
   "sources":  [ { "name": "", "url": "", "ref": "main" } ],
   "targets":  { "claude": true, "copilot": false },
-  "models":   { "claude": { "smart": "opus", "fast": "sonnet" }, "copilot": {}, "agents": {} },
+  "models":   { "claude": { "smart": "opus", "fast": "sonnet" }, "copilot": { "smart": "gpt-5", "fast": "gpt-5-mini" }, "agents": {} },
   "catalog":  { "skills": "all", "agents": "all", "templates": "all" },
   "compat":   { "skillLinks": "auto" },
   "templates": [ { "name": "", "description": "", "content": "" } ],
@@ -51,6 +51,12 @@ plumbing: **you write exactly one file, `~/.skopos/config.json`** (respect
   }
 }
 ```
+
+`models.agents` maps an agent name to either a bare model name (applied to any
+target whose model family matches) or an object keyed by target —
+`{ "sentinel": "opus", "implementer": { "claude": "sonnet", "copilot": "gpt-5" } }`.
+Leave it `{}` unless the user asks for a specific pinning; the tier maps above
+already cover every agent.
 
 ## Interview phases
 
@@ -76,8 +82,36 @@ check the URL shape only — do **not** clone anything; `skopos sources sync`
 does that later.
 
 **5. Targets & models.** Which tools to enhance (claude / copilot — default to
-what's detected on the machine) and, only if the user cares, the model tier
-mapping (which model is "smart", which is "fast") per tool.
+what's detected on the machine), then model routing. Routing is **skippable and
+should be offered as skippable** — the shipped tier maps are a good answer and
+most users should take them. Ask once: "The defaults map each specialist to a
+model by tier — want to see them or just take them?" If they take them, move on.
+
+If they want to look, work in two steps:
+
+- **Tier maps** (`models.claude`, `models.copilot`): which model is "smart" and
+  which is "fast", per enabled target. Every specialist inherits from these.
+- **Per-agent overrides** (`models.agents`): walk the roster — `scout`,
+  `planner`, `implementer`, `reviewer`, `sentinel` — naming each one's tier and
+  the model it currently resolves to, and ask whether any should be pinned to
+  something else. Only write the ones they change; an empty `models.agents` is
+  the normal outcome.
+
+Per-agent overrides take two shapes, and which to write depends on how many
+targets are enabled:
+
+- One target enabled → a bare model name is fine: `"sentinel": "opus"`.
+- Both targets enabled → use the object form so each target gets a model from
+  its own family: `"implementer": { "claude": "sonnet", "copilot": "gpt-5" }`.
+  A bare Claude model name is ignored for Copilot (and vice versa), which falls
+  back to the tier map — safe, but rarely what the user meant, so prefer the
+  explicit form.
+
+These overrides are directives: whatever is set here is written into the agent
+files on disk and the host CLI honors it. Run `skopos config validate` after
+writing and show the user anything it reports — it catches misspelled agent
+names, unknown targets, and a model aimed at the wrong target's family, and
+warns (without blocking) about model names it doesn't recognize.
 
 **6. Templates.** skopos ships default templates for the workflow artifacts it
 produces — PR descriptions, code review reports, spec sheets, and the

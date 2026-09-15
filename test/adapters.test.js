@@ -34,11 +34,17 @@ test('claude adapter honors per-agent model override', () => {
   assert.equal(data.model, 'haiku');
 });
 
-test('copilot adapter keeps tools and strips unmapped model', () => {
-  const config = configLib.builtinDefaults(); // models.copilot = {}
+test('copilot adapter keeps tools and resolves the shipped default tier map', () => {
+  const config = configLib.builtinDefaults(); // models.copilot = { smart, fast }
   const out = adapters.get('copilot').renderAgent(agent, config);
   const { data } = fm.parse(out);
   assert.deepEqual(data.tools, ['read', 'grep', 'glob']);
+  assert.equal(data.model, 'gpt-5-mini'); // fast → gpt-5-mini by default mapping
+});
+
+test('copilot adapter strips the model key when the tier has no mapping', () => {
+  // Not merged over the defaults — an empty tier map is the case under test.
+  const { data } = fm.parse(adapters.get('copilot').renderAgent(agent, { models: { copilot: {} } }));
   assert.equal(data.model, undefined);
 });
 
@@ -46,6 +52,39 @@ test('copilot adapter maps tier when configured', () => {
   const config = configLib.merge(configLib.builtinDefaults(), { models: { copilot: { fast: 'gpt-5-mini' } } });
   const { data } = fm.parse(adapters.get('copilot').renderAgent(agent, config));
   assert.equal(data.model, 'gpt-5-mini');
+});
+
+test('a bare claude model name in models.agents does not leak into copilot', () => {
+  const config = configLib.merge(configLib.builtinDefaults(), { models: { agents: { scout: 'haiku' } } });
+  // Claude honors it; copilot skips it on family mismatch and uses its tier map.
+  assert.equal(fm.parse(adapters.get('claude').renderAgent(agent, config)).data.model, 'haiku');
+  assert.equal(fm.parse(adapters.get('copilot').renderAgent(agent, config)).data.model, 'gpt-5-mini');
+});
+
+test('a target-keyed override directs each target independently', () => {
+  const config = configLib.merge(configLib.builtinDefaults(), {
+    models: { agents: { scout: { claude: 'haiku', copilot: 'gpt-4o' } } },
+  });
+  assert.equal(fm.parse(adapters.get('claude').renderAgent(agent, config)).data.model, 'haiku');
+  assert.equal(fm.parse(adapters.get('copilot').renderAgent(agent, config)).data.model, 'gpt-4o');
+});
+
+test('a target-keyed override covering one target leaves the other on its tier map', () => {
+  const config = configLib.merge(configLib.builtinDefaults(), { models: { agents: { scout: { claude: 'haiku' } } } });
+  assert.equal(fm.parse(adapters.get('claude').renderAgent(agent, config)).data.model, 'haiku');
+  assert.equal(fm.parse(adapters.get('copilot').renderAgent(agent, config)).data.model, 'gpt-5-mini');
+});
+
+test('an unregistered model name in models.agents still applies to every target', () => {
+  const config = configLib.merge(configLib.builtinDefaults(), { models: { agents: { scout: 'acme-llm-1' } } });
+  assert.equal(fm.parse(adapters.get('claude').renderAgent(agent, config)).data.model, 'acme-llm-1');
+  assert.equal(fm.parse(adapters.get('copilot').renderAgent(agent, config)).data.model, 'acme-llm-1');
+});
+
+test('a copilot model name in models.agents does not leak into claude', () => {
+  const config = configLib.merge(configLib.builtinDefaults(), { models: { agents: { scout: 'gpt-4o' } } });
+  assert.equal(fm.parse(adapters.get('claude').renderAgent(agent, config)).data.model, 'sonnet');
+  assert.equal(fm.parse(adapters.get('copilot').renderAgent(agent, config)).data.model, 'gpt-4o');
 });
 
 test('adapter destinations follow each tool convention', () => {

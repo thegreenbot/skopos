@@ -74,8 +74,107 @@ test('validateConfig catches the important mistakes', () => {
   assert.match(text, /templates\[0\]\.content is required/);
 });
 
-test('valid default config produces no errors', () => {
+test('valid default config produces no errors or warnings', () => {
   assert.deepEqual(configLib.validateConfig(configLib.builtinDefaults()), []);
+  assert.deepEqual(configLib.configWarnings(configLib.builtinDefaults()), []);
+});
+
+test('copilot ships a populated tier map', () => {
+  const d = configLib.builtinDefaults();
+  assert.equal(d.models.copilot.smart, 'gpt-5');
+  assert.equal(d.models.copilot.fast, 'gpt-5-mini');
+});
+
+test('validateConfig accepts both per-agent override shapes', () => {
+  const ok = configLib.merge(configLib.builtinDefaults(), {
+    models: { agents: { sentinel: 'opus', implementer: { claude: 'sonnet', copilot: 'gpt-5' } } },
+  });
+  assert.deepEqual(configLib.validateConfig(ok), []);
+});
+
+test('validateConfig errors on a family/target mismatch in a keyed override', () => {
+  const bad = configLib.merge(configLib.builtinDefaults(), {
+    models: { agents: { scout: { copilot: 'haiku' } } },
+  });
+  const text = configLib.validateConfig(bad).join('\n');
+  assert.match(text, /models\.agents\.scout\.copilot names 'haiku', a claude model/);
+});
+
+test('validateConfig errors on a family/target mismatch in a tier map', () => {
+  const bad = configLib.merge(configLib.builtinDefaults(), {
+    models: { claude: { smart: 'gpt-5' }, copilot: { fast: 'haiku' } },
+  });
+  const text = configLib.validateConfig(bad).join('\n');
+  assert.match(text, /models\.claude\.smart names 'gpt-5', a copilot model — a claude tier must name a claude model/);
+  assert.match(text, /models\.copilot\.fast names 'haiku', a claude model — a copilot tier must name a copilot model/);
+});
+
+test('an unregistered model in a tier map still only warns', () => {
+  const cfg = configLib.merge(configLib.builtinDefaults(), { models: { claude: { smart: 'opus-5' } } });
+  assert.deepEqual(configLib.validateConfig(cfg), []);
+  assert.match(configLib.configWarnings(cfg).join('\n'), /models\.claude\.smart names 'opus-5'/);
+});
+
+test('the shipped tier defaults are themselves family-consistent', () => {
+  const d = configLib.builtinDefaults();
+  assert.deepEqual(configLib.validateConfig(d), []);
+  assert.deepEqual(configLib.configWarnings(d), []);
+});
+
+test('validateConfig errors on an unknown target key inside an override', () => {
+  const bad = configLib.merge(configLib.builtinDefaults(), {
+    models: { agents: { scout: { cursor: 'haiku' } } },
+  });
+  const text = configLib.validateConfig(bad).join('\n');
+  assert.match(text, /models\.agents\.scout\.cursor is not a known target \(known: claude, copilot\)/);
+});
+
+test('validateConfig errors on an override naming an unknown agent, but only when agents are known', () => {
+  const bad = configLib.merge(configLib.builtinDefaults(), { models: { agents: { implementor: 'haiku' } } });
+  assert.deepEqual(configLib.validateConfig(bad), []); // no plan → nothing to compare against
+  const text = configLib.validateConfig(bad, { agentNames: ['scout', 'implementer'] }).join('\n');
+  assert.match(text, /models\.agents\.implementor names no agent in the current plan \(known: scout, implementer\)/);
+});
+
+test('an override on a real agent that catalog.agents excluded warns instead of erroring', () => {
+  const cfg = configLib.merge(configLib.builtinDefaults(), { models: { agents: { sentinel: 'opus' } } });
+  const plan = { agentNames: ['scout'], knownAgentNames: ['scout', 'sentinel'] };
+  assert.deepEqual(configLib.validateConfig(cfg, plan), []); // inert, not a mistake
+  assert.match(
+    configLib.configWarnings(cfg, plan).join('\n'),
+    /models\.agents\.sentinel has no effect — agent 'sentinel' exists but catalog\.agents excludes it/,
+  );
+});
+
+test('knownAgentNames does not excuse an agent that exists nowhere', () => {
+  const bad = configLib.merge(configLib.builtinDefaults(), { models: { agents: { implementor: 'opus' } } });
+  const plan = { agentNames: ['scout'], knownAgentNames: ['scout', 'sentinel'] };
+  assert.match(
+    configLib.validateConfig(bad, plan).join('\n'),
+    /models\.agents\.implementor names no agent in the current plan/,
+  );
+});
+
+test('validateConfig rejects an override that is neither a name nor a target map', () => {
+  const bad = configLib.merge(configLib.builtinDefaults(), { models: { agents: { scout: ['haiku'] } } });
+  const text = configLib.validateConfig(bad).join('\n');
+  assert.match(text, /models\.agents\.scout must be a model name or an object keyed by target/);
+});
+
+test('an unregistered model warns instead of erroring, wherever it appears', () => {
+  const custom = configLib.merge(configLib.builtinDefaults(), {
+    models: {
+      claude: { smart: 'acme-llm-1' },
+      agents: { scout: 'acme-llm-2', planner: { claude: 'acme-llm-3' } },
+    },
+  });
+  assert.deepEqual(configLib.validateConfig(custom), []);
+  const warnings = configLib.configWarnings(custom);
+  assert.equal(warnings.length, 3);
+  for (const w of warnings) assert.match(w, /not in the model registry/);
+  assert.ok(warnings.some((w) => w.startsWith('models.claude.smart')));
+  assert.ok(warnings.some((w) => w.startsWith('models.agents.scout')));
+  assert.ok(warnings.some((w) => w.startsWith('models.agents.planner.claude')));
 });
 
 test('invalid JSON is reported as a problem, not a crash', (t) => {

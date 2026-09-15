@@ -34,6 +34,11 @@ test('catalog selection filters built-ins', (t) => {
   assert.deepEqual(plan.agents.map((a) => a.name), ['scout']);
   assert.deepEqual(plan.skills.map((s) => s.name), ['skopos-setup']);
   assert.deepEqual(plan.templates.map((t) => t.name), ['pr-description']);
+  // knownAgents keeps the filtered-out ones, so config validation can tell a
+  // narrowed catalog from a typo'd models.agents key.
+  assert.ok(plan.knownAgents.includes('scout'));
+  assert.ok(plan.knownAgents.includes('sentinel'));
+  assert.ok(plan.knownAgents.length > plan.agents.length);
 });
 
 test('config.templates entries take precedence over the catalog and are collected', (t) => {

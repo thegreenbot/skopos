@@ -1,35 +1,107 @@
 # Model routing guide
 
-Skopos never picks which model runs a piece of work — the platform executing
-it always does (Claude Code, the Copilot CLI, or whatever a task gets
-delegated to). What Skopos can do is **signal** a preference, backed by the
-capability registry in `docs/model-capabilities.md`, so that decision is
-better informed.
+Model routing in Skopos is two layers, and conflating them is the fastest way
+to misunderstand what it does:
 
-This guide covers two related but distinct things:
+1. **Directive resolution** — `models.claude` / `models.copilot` /
+   `models.agents` in config decide the literal model written into every
+   rendered agent file. Skopos makes this call, and the host CLI honors it.
+2. **Preference signaling** — the informational layer on top, for delegation
+   that has no rendered config to read. Skopos recommends; whoever is routing
+   decides.
 
-1. **Deterministic tier resolution** — how `models.claude`/`models.copilot`
-   in config actually pick the model that lands in a rendered agent file.
-2. **Preference signaling** — the informational layer on top, for use when
-   delegating work rather than rendering a fixed config.
+The only thing Skopos genuinely cannot direct is the **primary session's own
+model**. Skopos is a persona layer inside a session the host already started,
+so that model was chosen before any Skopos instruction was read.
 
-## 1. Deterministic tier resolution (what actually ships)
+## 1. Directive resolution (what actually ships)
 
 Each catalog/source agent declares `model: smart` or `model: fast` in its
-frontmatter — the author's signal of how much reasoning the work needs. Each
-adapter resolves that tier to a literal model name at render time:
+frontmatter — the author's signal of how much reasoning the work needs. At
+render time that tier resolves to a literal model name (`lib/model-routing.js`,
+shared by both adapters):
 
 ```
-models.agents.<name>  (per-agent override, wins if set)
+models.agents.<name>.<target>   target-specific override
   ↓ else
-models.<target>.<tier>  (e.g. models.claude.smart)
+models.agents.<name>            bare model name — only when the model's family
+                                matches the target (see below)
   ↓ else
-the tier string itself, or nothing (copilot has no fallback default)
+models.<target>.<tier>          e.g. models.claude.smart
+  ↓ else
+the tier string itself, or nothing (copilot strips the key instead)
 ```
 
-This is what `skopos install`/`update` actually write to
-`~/.claude/agents/*.md` or `~/.copilot/agents/*.agent.md`. It's deterministic
-by design — Skopos needs to write *something* concrete to disk.
+So a per-agent override takes either shape:
+
+```json
+{
+  "models": {
+    "claude":  { "smart": "opus",  "fast": "sonnet" },
+    "copilot": { "smart": "gpt-5", "fast": "gpt-5-mini" },
+    "agents": {
+      "sentinel":    "opus",
+      "implementer": { "claude": "sonnet", "copilot": "gpt-5" },
+      "scout":       { "claude": "haiku" }
+    }
+  }
+}
+```
+
+### The family-matching rule
+
+A bare string in `models.agents` was written without a target in mind, so it is
+applied only to targets whose model family matches — `"sentinel": "opus"` pins
+Sentinel on Claude and is *skipped* for Copilot, which falls through to
+`models.copilot.smart`. That is what stops a Claude model name from landing in a
+Copilot agent file when both targets are enabled.
+
+A model with no entry in the capability registry has no family to check, so it
+applies to every target: custom, self-hosted, and preview model IDs keep
+working. Use the target-keyed object form whenever you want certainty.
+
+This is what `skopos install`/`update` write to `~/.claude/agents/*.md` and
+`~/.copilot/agents/*.agent.md`, and it is also the **Model** column of the
+specialist roster in the rendered persona block, so the session knows how to
+route delegation that isn't one of the named specialists.
+
+### Validation
+
+`skopos config validate` checks the `models` block and distinguishes blocking
+errors from advisories:
+
+| Condition | Result |
+|---|---|
+| Override names an agent that exists nowhere (typo) | error |
+| Override object uses an unknown target key | error |
+| Target-keyed override names a model from another family | error |
+| Tier map names a model from another family | error |
+| Override names a real agent that `catalog.agents` excludes | warning, not blocking |
+| Model is not in the capability registry | warning, not blocking |
+
+The two warnings are the cases where nothing is actually wrong. An **unregistered
+model** renders through as-is; Skopos just can't advise on it, which is what
+keeps custom and preview model IDs working. An **override on an excluded agent**
+is inert rather than mistaken — narrowing `catalog.agents` without pruning
+`models.agents` is a normal thing to do, and the key starts working again the
+moment the agent is re-enabled.
+
+The typo case is an error precisely because it is *not* inert in intent: the
+user asked for a specific model and would silently not get it.
+
+`skopos install` and `skopos update` report this whole table as **warnings** and
+never block on it. Nothing here can produce a bad render — an override key that
+matches no agent is dead config either way — so a dead key is worth surfacing
+but not worth failing a global install over. `config validate` is the strict
+pass: run it (or wire it into CI) when you want a typo to be a hard failure.
+The two messages stay distinct in both commands, so the warning still tells you
+which case you are looking at.
+
+Family mismatches are errors in both the tier maps and the target-keyed
+overrides, because both are target-scoped by construction — naming another
+family's model there can only ever render a value that target cannot use. The
+bare string form in `models.agents` is the one place a cross-family name is
+tolerated, and there it is skipped rather than rejected (see above).
 
 `skopos models check` runs the capability advisor (see
 `docs/model-capabilities.md`) against every one of these resolutions and
@@ -92,3 +164,8 @@ in the payload itself rather than only in prose here: it is a preference
 signal, not a directive. A delegating platform is free to weigh it against
 cost, availability, load, or its own routing policy, and to disregard it
 entirely. Skopos's job stops at providing a well-reasoned recommendation.
+
+This caveat belongs to §2 only. It does not apply to the resolution in §1,
+which is a directive: it is written to disk and the host CLI acts on it. A host
+may of course still substitute a model for availability or policy reasons — but
+that is the host overriding an instruction, not Skopos declining to give one.

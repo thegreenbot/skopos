@@ -221,3 +221,85 @@ test('persona block renders registry table and roster from config', (t) => {
   assert.ok(claudeMd.includes('`scout`'));
   assert.ok(claudeMd.includes('| `sentinel` |'));
 });
+
+test('the roster reports the model each target actually resolves', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({
+    targets: { claude: true, copilot: true },
+    models: { agents: { sentinel: 'opus' } },
+  }));
+  install(env);
+
+  const claudeMd = read(path.join(env.claudeDir, 'CLAUDE.md'));
+  assert.ok(claudeMd.includes('| Agent | Tier | Model | Summon when |'));
+  assert.match(claudeMd, /\| `sentinel` \| smart \| opus \|/);
+  assert.match(claudeMd, /\| `scout` \| fast \| sonnet \|/);
+
+  // Same roster, rendered for copilot: the bare claude override is skipped and
+  // the copilot tier map answers instead.
+  const copilotMd = read(path.join(env.copilotDir, 'copilot-instructions.md'));
+  assert.match(copilotMd, /\| `sentinel` \| smart \| gpt-5 \|/);
+  assert.match(copilotMd, /\| `scout` \| fast \| gpt-5-mini \|/);
+});
+
+test('the model-routing section ships in the persona block', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig());
+  install(env);
+  const claudeMd = read(path.join(env.claudeDir, 'CLAUDE.md'));
+  assert.ok(claudeMd.includes('## Model routing — the roster\'s Model column is a directive'));
+});
+
+test('copilot agents render with a model key out of the box', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({ targets: { copilot: true } }));
+  install(env);
+  assert.match(read(path.join(env.copilotDir, 'agents', 'scout.agent.md')), /^model: gpt-5-mini$/m);
+  assert.match(read(path.join(env.copilotDir, 'agents', 'planner.agent.md')), /^model: gpt-5$/m);
+});
+
+test('install warns, without blocking, on an override naming an agent that exists nowhere', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({ models: { agents: { implementor: 'haiku' } } }));
+  // The key is inert either way, so it never fails an install; `config validate`
+  // is where a typo is a hard error.
+  const r = install(env);
+  assert.ok(r.warnings.some((w) => w.includes('models.agents.implementor names no agent in the current plan')));
+  assert.match(read(path.join(env.claudeDir, 'agents', 'implementer.md')), /^model: sonnet$/m);
+});
+
+test('install warns, without blocking, when catalog.agents excludes an overridden agent', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({
+    catalog: { skills: 'all', agents: ['scout'], templates: 'all' },
+    models: { agents: { sentinel: 'opus' } },
+  }));
+  const r = install(env); // the agent is real, just not installed — inert, not wrong
+  assert.ok(r.warnings.some((w) => w.includes("models.agents.sentinel has no effect — agent 'sentinel' exists")));
+  assert.ok(fs.existsSync(path.join(env.claudeDir, 'agents', 'scout.md')));
+  assert.ok(!fs.existsSync(path.join(env.claudeDir, 'agents', 'sentinel.md')));
+});
+
+test('install warns, without blocking, on a model it does not recognize', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({ models: { agents: { scout: 'acme-llm-1' } } }));
+  const r = install(env);
+  assert.ok(r.warnings.some((w) => w.includes("models.agents.scout names 'acme-llm-1'")));
+  assert.match(read(path.join(env.claudeDir, 'agents', 'scout.md')), /^model: acme-llm-1$/m);
+});
+
+test('config validate: unknown agent override fails, unknown model only warns', (t) => {
+  const { env } = makeSandbox(t);
+  writeConfig(env, baseConfig({ models: { agents: { implementor: 'haiku' } } }));
+  const bad = runCli(env, ['config', 'validate']);
+  assert.equal(bad.code, 1);
+  assert.match(bad.stdout, /config: INVALID/);
+  assert.match(bad.stdout, /names no agent in the current plan/);
+
+  writeConfig(env, baseConfig({ models: { agents: { scout: 'acme-llm-1' } } }));
+  const warned = runCli(env, ['config', 'validate']);
+  assert.equal(warned.code, 0);
+  assert.match(warned.stdout, /config: OK/);
+  assert.match(warned.stdout, /warnings \(1\) — not blocking/);
+  assert.match(warned.stdout, /not in the model registry/);
+});
