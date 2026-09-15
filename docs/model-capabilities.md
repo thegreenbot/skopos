@@ -1,11 +1,17 @@
 # Model capability reference
 
 Skopos maintains a small, best-effort registry of what each model it knows
-about can do. This is a foundation for **influencing** routing decisions, not
-determining them: the AI platform running an agent (Claude Code, the Copilot
-CLI, or anything a task gets delegated to) always makes the final call on
-which model actually runs. See `docs/model-routing-guide.md` for how that
-signal flows through delegation.
+about can do. The registry serves both routing layers described in
+`docs/model-routing-guide.md`:
+
+- **Directive** — `family` participates in resolution. A bare model name in
+  `models.agents` applies only to targets whose model family matches it, and
+  `skopos config validate` rejects a target-keyed override that names a model
+  from the wrong family. A model that is *not* in this registry has no family
+  to check, so it applies everywhere and validation only warns.
+- **Advisory** — `reasoningDepth` and `toolUse` back the capability warnings
+  below, and `family` plus `costTier` build the fallback chains behind
+  `skopos models signal`. These inform a routing decision; they never block one.
 
 Source of truth: `lib/model-capabilities.js`. Print the live matrix with:
 
@@ -34,6 +40,9 @@ Fields:
 - **Concurrent tools** — `high` / `medium` / `low`. Rough capacity for
   juggling several tool calls in one turn.
 - **Cost tier** — `high` / `medium` / `low`, relative within the registry.
+- **Family** — the provider family. Target adapters are named for the family
+  they serve (`claude`, `copilot`), which is what lets resolution and validation
+  compare the two directly.
 
 ## How Skopos derives per-agent requirements
 
@@ -85,7 +94,10 @@ surfacing as a confused user report.
 ## Extending the registry
 
 Add a new model by adding an entry to `CAPABILITIES` in
-`lib/model-capabilities.js` with all five fields filled in — the test suite
+`lib/model-capabilities.js` with all six fields filled in — note that adding a
+model also changes resolution, since a bare `models.agents` name that was
+previously unregistered (and therefore applied to every target) becomes
+family-scoped once it is in the registry. The test suite
 (`test/model-capabilities.test.js`) enforces every entry is complete, and
 `test/model-compatibility.test.js` will automatically include it in the
 cross-model render/advisory checks.

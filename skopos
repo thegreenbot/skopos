@@ -10,7 +10,7 @@
 
 const path = require('path');
 const {
-  SKOPOS_VERSION, runInstall, runVerify, runUninstall, runStatus, runSourcesSync,
+  SKOPOS_VERSION, runInstall, runVerify, runUninstall, runStatus, runSourcesSync, runConfigValidate,
   runModelsList, runModelsCheck, runModelsSignal, runModelsMatrix,
   runSorAuth, runSorTest, runSorPublish, runSorList, runSorRead,
 } = require('./lib/commands');
@@ -303,14 +303,20 @@ function main() {
 
     if (cmd === 'config') {
       if (args._[1] === 'validate') {
-        const loaded = configLib.loadConfig(env, skoposRoot);
-        const errors = configLib.validateConfig(loaded.config).concat(loaded.problems);
-        if (!errors.length) {
-          console.log(`config: OK (${loaded.existed ? configLib.configPath(env) : 'no user config yet — defaults only'})`);
+        const r = runConfigValidate({ env, skoposRoot });
+        const printWarnings = () => {
+          if (!r.warnings.length) return;
+          console.log(c.boldYellow(`warnings (${r.warnings.length}) — not blocking:`));
+          for (const w of r.warnings) console.log(c.yellow(`  ! ${w}`));
+        };
+        if (!r.errors.length) {
+          console.log(`config: OK (${r.existed ? r.path : 'no user config yet — defaults only'})`);
+          printWarnings();
           process.exit(0);
         }
         console.log('config: INVALID');
-        for (const e of errors) console.log(`  - ${e}`);
+        for (const e of r.errors) console.log(`  - ${e}`);
+        printWarnings();
         process.exit(1);
       }
       fail('usage: skopos config validate');

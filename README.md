@@ -142,13 +142,32 @@ skopos models list|check|signal [<agent>] [--family claude|copilot]|matrix
 
 ## Model routing
 
-skopos never decides which model runs your work — the AI platform executing
-it always does. What it can do is inform that decision: a small capability
-registry, per-agent advisories baked into every `install`/`update`, and a
-preference-signaling API for when work gets delegated elsewhere. See
-[docs/model-capabilities.md](docs/model-capabilities.md) for the capability
-matrix and [docs/model-routing-guide.md](docs/model-routing-guide.md) for how
-tier resolution and delegation signaling fit together.
+Model routing has two layers, and they work differently.
+
+**Directive — the rendered agent files.** Each specialist declares a tier
+(`smart` / `fast`); `models.claude` and `models.copilot` map tiers to literal
+model names, and `models.agents` pins individual specialists. Whatever that
+resolves to is written into the `model:` key of the agent file skopos renders,
+and the host CLI honors it. So this really does pin Sentinel to Opus:
+
+```json
+{ "models": { "agents": { "sentinel": "opus" } } }
+```
+
+A bare model name applies to every target whose model family matches it; write
+`{ "claude": "sonnet", "copilot": "gpt-5" }` to direct each target separately.
+`skopos config validate` checks these.
+
+**Advisory — everything else.** The capability registry, the per-agent warnings
+baked into every `install`/`update`, `skopos models check`, and the preference
+payloads from `skopos models signal` are informational: they inform a routing
+decision made elsewhere and never block anything. skopos does not choose the
+model for your own session either — the platform you are already running picked
+that before it read a word of skopos.
+
+See [docs/model-capabilities.md](docs/model-capabilities.md) for the capability
+matrix and [docs/model-routing-guide.md](docs/model-routing-guide.md) for the
+full resolution order.
 
 ## Enterprise onboarding
 
