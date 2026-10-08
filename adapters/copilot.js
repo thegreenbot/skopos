@@ -2,6 +2,7 @@
 
 const { path, exists } = require('../lib/util');
 const frontmatter = require('../lib/frontmatter');
+const modelRouting = require('../lib/model-routing');
 
 // Copilot CLI adapter — pure frontmatter/path translation.
 //
@@ -14,14 +15,11 @@ const frontmatter = require('../lib/frontmatter');
 
 const GLOBAL_INSTRUCTIONS_FILE = 'copilot-instructions.md';
 
+// Per-agent override (target-aware) → models.copilot.<tier>. No mapping → strip
+// the key entirely and let Copilot use its default; the tier words ('smart',
+// 'fast') are not model names Copilot would recognise.
 function resolveModel(agent, config) {
-  const models = config.models || {};
-  const perAgent = (models.agents || {})[agent.name];
-  if (perAgent) return perAgent;
-  const tier = agent.data.model;
-  const map = models.copilot || {};
-  // No mapping → strip the key entirely and let Copilot use its default.
-  return map[tier] || undefined;
+  return modelRouting.resolveModel(agent, config, 'copilot', { tierFallback: false });
 }
 
 module.exports = {

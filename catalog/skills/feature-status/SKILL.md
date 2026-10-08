@@ -61,4 +61,8 @@ search-rerank       closed
   draft or an `interview-handoff` packet with no completed interview to
   follow it, sitting for a while. Name the stakeholder and recommend
   resuming or following up rather than letting it go quiet.
+- **Provisionally concluded interviews** — a `skopos-interview-status: provisional`
+  artifact whose open questions still have no answer. Unlike an in-progress
+  draft this one is usable, so it blocks nothing; name the open slots and
+  their owners so they get closed before the charter is signed off.
 - **GUIDANCE.md over ~40 lessons** — recommend a curation pass in the next retro.

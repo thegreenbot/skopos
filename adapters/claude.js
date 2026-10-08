@@ -2,6 +2,7 @@
 
 const { path, exists } = require('../lib/util');
 const frontmatter = require('../lib/frontmatter');
+const modelRouting = require('../lib/model-routing');
 
 // Claude Code adapter — pure frontmatter/path translation.
 //
@@ -10,13 +11,10 @@ const frontmatter = require('../lib/frontmatter');
 // instructions → fenced SKOPOS:MANAGED block in ~/.claude/CLAUDE.md
 // skills       → native home is ~/.agents/skills; compat links land in ~/.claude/skills
 
+// Per-agent override (target-aware) → models.claude.<tier> → the tier string
+// itself. See lib/model-routing.js for the full order.
 function resolveModel(agent, config) {
-  const models = config.models || {};
-  const perAgent = (models.agents || {})[agent.name];
-  if (perAgent) return perAgent;
-  const tier = agent.data.model; // 'smart' | 'fast' | literal model name
-  const map = models.claude || {};
-  return map[tier] || tier || undefined;
+  return modelRouting.resolveModel(agent, config, 'claude', { tierFallback: true });
 }
 
 module.exports = {

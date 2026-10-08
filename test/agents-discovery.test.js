@@ -344,7 +344,7 @@ test('with no user agents the roster gains no user section', (t) => {
 
   const b = block(env);
   assert.ok(!b.includes('Your agents'));
-  assert.ok(b.includes('| Agent | Role | Tier | Summon when |'));
+  assert.ok(b.includes('| Agent | Role | Tier | Model | Summon when |'));
   assert.ok(b.includes('### Project-scoped agents'));
 });
 

@@ -22,7 +22,11 @@ Collect interviews from all sources:
    checkpointing) and `skopos-artifact: interview-handoff` packets (a
    template for producing an interview, not one itself; its presence means
    that stakeholder is still out for interview). Files with no frontmatter
-   at all are older interviews and count as complete.
+   at all are older interviews and count as complete. A
+   `skopos-interview-status: provisional` file **does** count — it concluded
+   with gaps rather than being abandoned. Carry its open questions into
+   *Known unknowns* with their owners intact, and say in the charter which
+   stakeholders were only provisionally interviewed.
 2. If `systemOfRecord.enabled: true`, fetch interviews from your configured system (Jira, GitHub, etc.).
    - Try to list all artifacts matching the feature slug.
    - If successful, show what you found and add them to the pool.
@@ -64,6 +68,12 @@ the one that pays:
 | Held by | Who believes it — and does anyone disagree? |
 | **Cheapest disproof** | What is the fastest, smallest thing that would show this is false? |
 | Blast radius | If it's false and we find out after building: what has to be redone? |
+
+Interviews now capture **cheapest disproof** and **blast radius** in the
+stakeholder's own answer. Carry those across verbatim — a disproof the person
+who holds the assumption named is worth more than one you invented. Where an
+interview left either field empty, it will appear in that interview's open
+questions; fill it here, and say that you did.
 
 Rank by `blast radius × uncertainty`. The top one or two drive the spike in
 `feature-plan` — you buy down risk by testing assumptions early, not by

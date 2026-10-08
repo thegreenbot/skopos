@@ -54,6 +54,26 @@ test('assessForTarget resolves through the real claude adapter, honoring per-age
   assert.equal(r.warnings.length, 1);
 });
 
+test('assessForTarget follows the family rule: a claude override is skipped for copilot', () => {
+  const config = configLib.merge(configLib.builtinDefaults(), { models: { agents: { planner: 'haiku' } } });
+  // Claude takes the override and inherits its advisory...
+  assert.equal(assessForTarget(smartAgent, 'claude', config).model, 'haiku');
+  // ...copilot falls through to its own tier map, so there is nothing to warn about.
+  const copilot = assessForTarget(smartAgent, 'copilot', config);
+  assert.equal(copilot.model, 'gpt-5');
+  assert.deepEqual(copilot.warnings, []);
+});
+
+test('assessForTarget reads a target-keyed override', () => {
+  const config = configLib.merge(configLib.builtinDefaults(), {
+    models: { agents: { planner: { claude: 'opus', copilot: 'gpt-3.5-turbo' } } },
+  });
+  assert.equal(assessForTarget(smartAgent, 'claude', config).model, 'opus');
+  const copilot = assessForTarget(smartAgent, 'copilot', config);
+  assert.equal(copilot.model, 'gpt-3.5-turbo');
+  assert.ok(copilot.warnings.length > 0); // under-serves a smart agent — still advised on
+});
+
 test('adviseInstall: default catalog + default config produces no advisories', (t) => {
   const { env } = makeSandbox(t);
   const config = configLib.merge(configLib.builtinDefaults(), { targets: { claude: true } });
