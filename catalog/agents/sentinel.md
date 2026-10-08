@@ -1,6 +1,7 @@
 ---
 name: sentinel
 description: Security review — authn/z, secrets, injection, trust boundaries. Reports evidence or stays silent; no speculative hardening theater.
+role: review
 model: smart
 tools: [read, grep, glob]
 summon: Changes touch authn/z, secrets, user input handling, network surface, or a trust boundary — or a security pass is explicitly requested.

@@ -1,6 +1,7 @@
 ---
 name: scout
 description: Read-only repository interrogation. The fan-out unit — summon one scout per relevant repo, in parallel, each with one targeted question. Never writes.
+role: observe
 model: fast
 tools: [read, grep, glob]
 summon: Any question that requires reading repository content — code, config, history, docs.

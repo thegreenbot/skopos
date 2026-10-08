@@ -105,9 +105,29 @@ writes `~/.skopos/config.json`), and finish with:
 ```
 
 Restart your AI session — it now opens with the Skopos persona: your identity
-and tone, your repository registry with scout fan-out, and a small roster of
-functional specialists (`scout`, `planner`, `implementer`, `reviewer`,
-`sentinel`).
+and tone, your repository registry with scout fan-out, and a delegation roster.
+
+## The roster is yours too
+
+The roster holds skopos's own functional specialists (`scout`, `planner`,
+`implementer`, `reviewer`, `sentinel`) **and the sub-agents you wrote
+yourself**. skopos reads `~/.claude/agents/`, `~/.copilot/agents/` and anything
+in `agents.dirs`, and advertises what it finds — role, model, tools, and the
+criterion for summoning it — so Skopos routes a Postgres migration to your
+`db-migrator` instead of a generic implementer.
+
+Read-only, always: your agent files are never written, reformatted, pruned, or
+entered into the lock. When skopos needs routing metadata your file doesn't
+carry, it records it in *your* config instead of editing your agent:
+
+```bash
+skopos agents list                     # the effective roster, both classes
+skopos agents adopt db-migrator --summon "A Postgres schema change needs to ship." --role deliver
+skopos update
+```
+
+Full detail, including name collisions and what gets sanitized before it
+reaches your instruction block: [docs/custom-agents.md](docs/custom-agents.md).
 
 ## What gets installed where
 
@@ -117,6 +137,7 @@ functional specialists (`scout`, `planner`, `implementer`, `reviewer`,
 | Templates (flat `.md`, workflow artifact skeletons) | `~/.agents/templates/<name>.md` | managed |
 | Compat skill links (per tool, `compat.skillLinks`) | `~/.claude/skills/`, `~/.copilot/skills/` | managed |
 | Agents (universal → per-tool frontmatter) | `~/.claude/agents/<n>.md`, `~/.copilot/agents/<n>.agent.md` | managed |
+| Your own agents (discovered, advertised in the roster) | wherever you keep them | **yours — read-only to skopos** |
 | Instructions (persona + sections) | fenced block in `~/.claude/CLAUDE.md` and `~/.copilot/copilot-instructions.md` | **fenced** |
 | Config, lock, backups, source checkouts | `~/.skopos/` | skopos home |
 
@@ -135,6 +156,7 @@ skopos update    [--dry-run]      # targets always come from config
 skopos verify                     # exit 2 on drift (fenced files: block-only hash)
 skopos status
 skopos uninstall [--dry-run]      # strip fences, restore snapshots
+skopos agents list|show|adopt|ignore [<name>]
 skopos sources sync|list
 skopos config validate
 skopos models list|check|signal [<agent>] [--family claude|copilot]|matrix

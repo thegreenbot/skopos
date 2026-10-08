@@ -80,7 +80,7 @@ test('deselecting an agent prunes it; pre-existing user agents are untouched', (
   write(userAgent, '---\nname: my-own-agent\n---\nmine');
   writeConfig(env, baseConfig());
   const r1 = install(env);
-  assert.ok(r1.preexisting.includes('claude:agents/my-own-agent.md'));
+  assert.ok(r1.userAgents.some((a) => a.name === 'my-own-agent' && a.origin === 'user:claude'));
 
   writeConfig(env, baseConfig({ catalog: { agents: ['scout'], skills: 'all' } }));
   const r2 = update(env);
@@ -231,15 +231,15 @@ test('the roster reports the model each target actually resolves', (t) => {
   install(env);
 
   const claudeMd = read(path.join(env.claudeDir, 'CLAUDE.md'));
-  assert.ok(claudeMd.includes('| Agent | Tier | Model | Summon when |'));
-  assert.match(claudeMd, /\| `sentinel` \| smart \| opus \|/);
-  assert.match(claudeMd, /\| `scout` \| fast \| sonnet \|/);
+  assert.ok(claudeMd.includes('| Agent | Role | Tier | Model | Summon when |'));
+  assert.match(claudeMd, /\| `sentinel` \| review \| smart \| opus \|/);
+  assert.match(claudeMd, /\| `scout` \| observe \| fast \| sonnet \|/);
 
   // Same roster, rendered for copilot: the bare claude override is skipped and
   // the copilot tier map answers instead.
   const copilotMd = read(path.join(env.copilotDir, 'copilot-instructions.md'));
-  assert.match(copilotMd, /\| `sentinel` \| smart \| gpt-5 \|/);
-  assert.match(copilotMd, /\| `scout` \| fast \| gpt-5-mini \|/);
+  assert.match(copilotMd, /\| `sentinel` \| review \| smart \| gpt-5 \|/);
+  assert.match(copilotMd, /\| `scout` \| observe \| fast \| gpt-5-mini \|/);
 });
 
 test('the model-routing section ships in the persona block', (t) => {

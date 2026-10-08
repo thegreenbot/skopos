@@ -34,8 +34,14 @@ module.exports = {
     return path.join(env.copilotDir, GLOBAL_INSTRUCTIONS_FILE);
   },
 
+  agentSuffix: '.agent.md',
+
+  agentsDir(env) {
+    return path.join(env.copilotDir, 'agents');
+  },
+
   agentDest(env, agent) {
-    return path.join(env.copilotDir, 'agents', `${agent.name}.agent.md`);
+    return path.join(this.agentsDir(env), `${agent.name}${this.agentSuffix}`);
   },
 
   renderAgent(agent, config) {
