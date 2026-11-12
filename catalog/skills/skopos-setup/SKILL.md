@@ -38,6 +38,7 @@ plumbing: **you write exactly one file, `~/.skopos/config.json`** (respect
     "projectScoped": true, "maxRoster": 40,
     "overlays": { "<agent-name>": { "summon": "", "role": "deliver", "tags": [], "prefer": false, "hide": false } }
   },
+  "brain":    { "...": "written only by `skopos brain plug` / `opt-out` — never by hand" },
   "compat":   { "skillLinks": "auto" },
   "templates": [ { "name": "", "description": "", "content": "" } ],
   "systemOfRecord": {
@@ -193,7 +194,14 @@ help them fix it before moving to the next system.
 Set `systemOfRecord.enabled: true` only if they configured at least one system.
 Set `systemOfRecord.default` to the first system name if they want one system to be the primary.
 
-**8. Write & render.** Show the final JSON. On approval:
+**8. Brain.** skopos expects a central brain — a skill that captures what
+sessions learn into one place. Run `skopos brain status`. If it is unplugged,
+explain in two sentences and offer to run the `brain-setup` skill now or
+later. Do not build the brain inside this interview. If they decline for good,
+`skopos brain opt-out` records it. The `brain` config block is written by
+`skopos brain plug` / `opt-out`, never by hand here.
+
+**9. Write & render.** Show the final JSON. On approval:
 1. Write `~/.skopos/config.json`.
 2. Run `skopos config validate` — fix and re-show if it fails.
 3. Run `skopos sources sync` if any sources were configured.
