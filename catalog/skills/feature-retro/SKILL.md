@@ -130,6 +130,12 @@ the system itself so it can't be forgotten:
 - a durable fact in the `SKOPOS:USER-FACTS` fence, or a rule in an enterprise
   source's `instructions/` if it applies across the whole org.
 
+- the brain, if one is plugged in (the `## Brain` section of your instructions
+  says so): lessons that are cross-project, or that have outgrown a single
+  repo's `GUIDANCE.md`, are captured as a `lesson` envelope with the retro as
+  its evidence. `GUIDANCE.md` stays the per-repo, trigger-first file read at
+  the start of work; the brain holds what spans repos and the overflow.
+
 Say which, explicitly, in the retro's Next section.
 
 ## Artifact format

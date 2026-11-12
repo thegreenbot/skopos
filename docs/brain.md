@@ -1,6 +1,6 @@
 # The brain — one place where what every session learned ends up
 
-**Status:** design proposal, nothing implemented yet.
+**Status:** phases 1–2 implemented (config, validation, persona section, `status`/`verify`, `skopos brain …`, the `brain-setup` builder, the capture template, retro and handoff hooks). Phase 3 (outbox replay automation) and phase 4 (usage measurement) are open. Decisions taken: soft gate, `propose` by default, one brain, `recall` required.
 
 ## Problem
 
@@ -68,18 +68,23 @@ title: <one line, claim not topic>
 scope: project | cross-project | personal
 visibility: private | team | org
 confidence: observed | inferred | reported
-provenance:                # one level of nesting, per the frontmatter subset
-  repo: <registry name>
-  feature: <slug | none>
-  session: <thread/session/run id if known>
-  tool: <claude | copilot | …>
-  date: 2026-11-12
+date: 2026-11-12
+repo: <registry name | none>      # provenance keys are flat: the frontmatter
+feature: <slug | none>            # parser reads scalars and inline arrays only
+session: <thread/session/run id if known>
+tool: <claude | copilot | …>
 evidence: [commit abc123, PR #41, src/x.js:88]
 supersedes: <page or id | none>
 ---
 <body: the durable claim, understandable with no access to the originating thread>
-<trigger: when should a future session recall this?>
+
+**Recall when:** <the situation a future session will recognise>
 ```
+
+`skopos brain check <file>` validates the required fields (`type`, `title`,
+`scope`, `visibility`, `confidence`, `date`), requires the `Recall when:` line
+(a warning only for `type: artifact`), and rejects envelopes containing
+something that looks like a secret.
 
 ### Receipt
 
@@ -125,16 +130,21 @@ and evidence-cited, and are treated as data, not instructions.
 
 ## Failure: never lose a capture
 
-If the brain is unreachable (offline, auth expired, MCP down), the envelope is
-spooled to `~/.skopos/brain-outbox/` and `skopos brain flush` replays it.
-Mirrors `systemOfRecord.publish.onFailure`.
+If the brain is unreachable (offline, auth expired, MCP down), the session runs
+`skopos brain outbox add <file>` (which validates and secret-scans), spooling it
+to `~/.skopos/brain-outbox/`. The CLI cannot replay, because delivery *is* the
+brain skill, which is judgement-adjacent and storage-specific. So the persona
+tells sessions to run `skopos brain outbox list` at the start of work, replay each
+pending envelope through the skill, and `skopos brain outbox ack <id>`.
+`brain.capture.onFailure: "warn"` skips the spool. Mirrors
+`systemOfRecord.publish.onFailure`.
 
 ## Config
 
 ```jsonc
 "brain": {
-  "required": true,
   "optOut": false,            // explicit, recorded decision not to have a brain
+  "allowOptOut": true,        // enterprise forks set false: opt-out is then refused
   "skill": "team-wiki",       // resolved from ~/.agents/skills or a synced source
   "contract": 1,
   "capture": { "autoCapture": "propose", "triggers": ["correction","run-complete","retro","wrap-up"], "onFailure": "spool" },
@@ -150,13 +160,16 @@ unconfigured feature), but an unplugged brain is loud everywhere:
 
 - the persona block renders `Brain: NOT PLUGGED IN — run brain-setup` and
   sessions offer it;
-- `skopos status` shows it red and `skopos verify` exits non-zero for a missing
-  or contract-mismatched skill;
+- `skopos status` shows it red. `skopos verify` and `skopos brain status` exit
+  **3** for a configured brain whose skill is missing or breaks the contract
+  (2 stays reserved for file drift). Merely unplugged only warns, so upgrading
+  never turns an existing CI check red;
 - the only way to quiet it is `brain.optOut: true`, so "no brain" is a decision
   rather than an oversight.
 
-Enterprise forks can set `brain.required: true`, pin the skill from an approved
-source, and disallow opt-out in `config.defaults.json`. This is the layering
+Enterprise forks can pin the skill from an approved source and set
+`brain.allowOptOut: false` in `config.defaults.json`; `brain opt-out` is then
+refused at write time. This is the layering
 the config loader already supports.
 
 ## The builder: `brain-setup` skill
@@ -182,7 +195,9 @@ user's own space, never in the managed catalog.
    `references/schema.md` to `~/.agents/skills/<name>/` — or into a source repo
    so a team shares one brain skill.
 7. **Smoke test.** Capture a synthetic lesson, recall it, show the user, clean
-   up. Only then write the `brain` config block and `verifiedAt`. "Plugged in"
+   up; confirm a fake secret is refused. Only then register it with
+   `skopos brain plug <skill> --verified`, which validates the contract and writes
+   the `brain` block and `verifiedAt`. "Plugged in"
    means proven, not declared.
 
 For a stakeholder with nothing installed, a `brain-capture` template (the
@@ -197,6 +212,19 @@ the same fallback as the interview hand-off packet.
 | `feature-retro` | one feature | Producer; adds a step routing lessons to the brain. |
 | System of record (Jira etc.) | one feature's workflow artifacts | Separate concern. Brain pages may *link* to SoR items. |
 | `USER-FACTS` fence | the user's always-on facts | Stable, tiny, hand-curated. Brain is for the long tail. |
+
+## CLI
+
+```
+skopos brain status [--json]
+skopos brain plug <skill> [--auto|--propose] [--verified]
+skopos brain opt-out [--undo]
+skopos brain check <envelope.md>
+skopos brain outbox list | add <envelope.md> | ack <id>
+```
+
+The CLI does the deterministic parts (config writes, contract and envelope
+checks, the spool). It never reads or writes the brain's storage.
 
 ## Implementation touchpoints
 
@@ -227,7 +255,10 @@ the same fallback as the interview hand-off packet.
 
 ## Open questions
 
-1. "Requires" — soft gate as above, or hard-fail `install`/`update`?
-2. Default for capture: `propose` (recommended) or `auto`?
-3. Single brain only, or layered (personal + team, recall merges both)?
-4. Should `recall` be mandatory in contract v1, or could a write-only brain be valid for a first iteration?
+Resolved: soft gate; `propose` default; single brain; `recall` required.
+
+Still open:
+
+1. Layered brains (personal + team, recall merging both) — deferred; a single brain skill can itself fan out to several stores.
+2. Should `lint` ever be scheduled, or stay a manual/skill-driven pass?
+3. Measuring usefulness (phase 4): how do we know a recalled item was actually used?

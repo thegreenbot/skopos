@@ -129,6 +129,23 @@ skopos update
 Full detail, including name collisions and what gets sanitized before it
 reaches your instruction block: [docs/custom-agents.md](docs/custom-agents.md).
 
+## The brain
+
+Lessons are produced in places that are about to close: a chat thread, an
+implementation run, a sub-agent's report. skopos expects you to plug in a
+**brain** — a skill of your own that captures them into one central place and
+recalls them in later sessions, LLM-wiki style. skopos doesn't care whether
+that place is a git repo, a vault, Notion or a database; it owns the contract,
+the capture envelope, and *when* sessions capture and recall.
+
+```bash
+# open your AI tool and run the brain-setup skill — it interviews you,
+# generates the skill, and smoke-tests it. Then:
+skopos brain status
+```
+
+Unplugged is loud, never blocking. Full design: [docs/brain.md](docs/brain.md).
+
 ## What gets installed where
 
 | Content | Destination | Ownership |
@@ -157,6 +174,7 @@ skopos verify                     # exit 2 on drift (fenced files: block-only ha
 skopos status
 skopos uninstall [--dry-run]      # strip fences, restore snapshots
 skopos agents list|show|adopt|ignore [<name>]
+skopos brain status|plug|opt-out|check|outbox
 skopos sources sync|list
 skopos config validate
 skopos models list|check|signal [<agent>] [--family claude|copilot]|matrix
