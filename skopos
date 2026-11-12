@@ -13,6 +13,7 @@ const {
   SKOPOS_VERSION, runInstall, runVerify, runUninstall, runStatus, runSourcesSync, runConfigValidate,
   runAgentsList, runAgentsShow, runAgentsAdopt, runAgentsIgnore,
   runModelsList, runModelsCheck, runModelsSignal, runModelsMatrix,
+  runBrainStatus, runBrainPlug, runBrainOptOut, runBrainCheck, runBrainOutbox,
   runSorAuth, runSorTest, runSorPublish, runSorList, runSorRead,
 } = require('./lib/commands');
 const configLib = require('./lib/config');
@@ -40,6 +41,9 @@ function parseArgs(argv) {
     else if (a === '--hide') args.hide = true;
     else if (a === '--show') args.hide = false;
     else if (a === '--undo') args.undo = true;
+    else if (a === '--auto') args.autoCapture = 'auto';
+    else if (a === '--propose') args.autoCapture = 'propose';
+    else if (a === '--verified') args.verified = true;
     else if (a === '--help' || a === '-h') args.help = true;
     else args._.push(a);
   }
@@ -84,6 +88,19 @@ Commands:
       Sync enterprise/approved-content sources (git) and pin SHAs, or list them.
   config validate
       Validate ~/.skopos/config.json (after enterprise-defaults merge).
+  brain status [--json]
+      Is a brain plugged in, does its skill honor the contract, what is pending
+      in the outbox. Unplugged is loud but never blocks install/update.
+  brain plug <skill> [--auto|--propose] [--verified]
+      Record the brain skill in your config. Refuses a skill that does not
+      declare brain-contract and the required ops (capture, recall).
+  brain opt-out [--undo]
+      Record an explicit decision not to have a brain.
+  brain check <envelope.md>
+      Validate a capture envelope (fields, recall trigger, secret scan).
+  brain outbox list | add <envelope.md> | ack <id>
+      Captures the brain could not take yet. skopos spools; the brain skill
+      replays; \`ack\` removes one once delivered.
   models list
       Print the known model capability matrix (informational — see
       docs/model-capabilities.md).
@@ -114,6 +131,17 @@ function agentLines(a) {
     `      ${a.summon || c.dim('(no summon criterion)')}`,
     a.managed ? null : `      ${c.dim(a.path)}`,
   ];
+}
+
+function brainStatusText(b) {
+  const pending = b.pending ? c.yellow(` · ${b.pending} capture(s) pending in outbox`) : '';
+  if (b.state === 'plugged') {
+    const v = b.verifiedAt ? `verified ${b.verifiedAt.slice(0, 10)}` : c.yellow('never smoke-tested');
+    return c.green(`plugged in: ${b.skill}`) + c.dim(` (${b.ops.join(', ')} · ${b.autoCapture} · ${v})`) + pending;
+  }
+  if (b.state === 'opted-out') return c.dim('opted out') + pending;
+  if (b.state === 'invalid') return c.boldRed(`BROKEN: ${b.skill}`) + pending;
+  return c.boldRed('NOT PLUGGED IN') + c.dim(' — run the brain-setup skill, or `skopos brain opt-out`') + pending;
 }
 
 function reportInstall(r, cmd) {
@@ -150,6 +178,10 @@ function reportInstall(r, cmd) {
     lines.push(fmt.keyValue('collisions', r.collisions.map((x) => `${x.name} (${x.path})`).join(', ')));
   }
 
+  if (r.brain && r.brain.state === 'unplugged') {
+    lines.push('');
+    lines.push(c.cyan('  → No brain plugged in — run the brain-setup skill so sessions can capture what they learn.'));
+  }
   if (!r.personalized) {
     lines.push('');
     lines.push(c.cyan('  → Not yet personalized — open your AI tool, run the skopos-setup interview,'));
@@ -178,7 +210,7 @@ function main() {
     }
 
     if (cmd === 'verify') {
-      const r = runVerify({ env });
+      const r = runVerify({ env, skoposRoot });
       const lines = [];
       lines.push(fmt.header('SKOPOS VERIFY', 'double'));
       lines.push('');
@@ -188,8 +220,14 @@ function main() {
         const f = Object.keys(r.lock.fenced || {}).length;
         lines.push(c.boldGreen(`✔ verify: OK`));
         lines.push(`  ${n} managed file(s) + ${f} fenced block(s) match (skopos ${r.lock.skoposVersion}).`);
+        if (r.brain && r.brain.state === 'unplugged') lines.push(c.yellow('  ⚠ no brain plugged in — run the brain-setup skill (or `skopos brain opt-out`).'));
+        if (!r.brainOk) {
+          lines.push('');
+          lines.push(c.boldRed(`✖ brain: skill '${r.brain.skill}' is unusable`));
+          for (const p of r.brain.problems) lines.push(c.red(`    • ${p}`));
+        }
         say(lines);
-        process.exit(0);
+        process.exit(r.brainOk ? 0 : 3);
       }
 
       lines.push(c.boldRed(`✖ verify: DRIFT detected`));
@@ -241,6 +279,10 @@ function main() {
         lines.push(fmt.keyValue('drift', driftTag));
       }
 
+      lines.push('');
+      lines.push(fmt.keyValue('brain', brainStatusText(s.brain)));
+      for (const p of s.brain.problems) lines.push(c.red(`    • ${p}`));
+
       if (s.userAgents.length) {
         lines.push('');
         lines.push(fmt.keyValue('yours', `${s.userAgents.length} agent(s) on the roster (untouched)`));
@@ -265,6 +307,67 @@ function main() {
 
       say(lines);
       process.exit(0);
+    }
+
+    if (cmd === 'brain') {
+      const sub = args._[1] || 'status';
+
+      if (sub === 'status') {
+        const b = runBrainStatus({ env, skoposRoot });
+        if (args.json) { console.log(JSON.stringify(b, null, 2)); process.exit(0); }
+        const lines = [fmt.header('SKOPOS BRAIN', 'double'), '', fmt.keyValue('brain', brainStatusText(b))];
+        if (b.skillFile) lines.push(fmt.keyValue('skill', b.skillFile));
+        for (const p of b.problems) lines.push(c.red(`    • ${p}`));
+        say(lines);
+        process.exit(b.state === 'invalid' ? 3 : 0);
+      }
+
+      if (sub === 'plug') {
+        if (!args._[2]) fail('usage: skopos brain plug <skill> [--auto|--propose] [--verified]');
+        const r = runBrainPlug({ env, skoposRoot, skill: args._[2], autoCapture: args.autoCapture, verified: args.verified });
+        say([c.boldGreen(`✔ brain plugged in: ${r.skill}`), `  ops: ${r.ops.join(', ')}`, `  written to ${r.path}`, c.cyan('  → run `skopos update` to put the brain into your instructions.')]);
+        process.exit(0);
+      }
+
+      if (sub === 'opt-out') {
+        const r = runBrainOptOut({ env, skoposRoot, undo: args.undo });
+        say([r.optOut ? c.green('✔ brain opted out') : c.green('✔ brain opt-out removed'), c.cyan('  → run `skopos update` to re-render.')]);
+        process.exit(0);
+      }
+
+      if (sub === 'check') {
+        if (!args._[2]) fail('usage: skopos brain check <envelope.md>');
+        const r = runBrainCheck({ file: args._[2] });
+        if (args.json) { console.log(JSON.stringify({ errors: r.errors, warnings: r.warnings }, null, 2)); process.exit(r.errors.length ? 1 : 0); }
+        for (const w of r.warnings) console.log(c.yellow(`  ! ${w}`));
+        if (r.errors.length) {
+          console.log(c.boldRed('✖ envelope invalid'));
+          for (const e of r.errors) console.log(c.red(`    • ${e}`));
+          process.exit(1);
+        }
+        console.log(c.boldGreen('✔ envelope OK'));
+        process.exit(0);
+      }
+
+      if (sub === 'outbox') {
+        const action = args._[2] || 'list';
+        if (action === 'list') {
+          const r = runBrainOutbox({ env, action });
+          if (args.json) { console.log(JSON.stringify(r, null, 2)); process.exit(0); }
+          if (!r.items.length) { console.log('outbox empty'); process.exit(0); }
+          for (const i of r.items) console.log(`${c.cyan(i.id)}  ${c.dim(i.type || '?')}  ${i.title}`);
+          process.exit(0);
+        }
+        if (!args._[3]) fail(`usage: skopos brain outbox ${action} ${action === 'add' ? '<envelope.md>' : '<id>'}`);
+        const r = runBrainOutbox({ env, action, file: args._[3], id: args._[3] });
+        if (action === 'add') {
+          for (const w of r.warnings) console.log(c.yellow(`  ! ${w}`));
+          console.log(c.green(`✔ spooled ${r.id}`));
+        } else console.log(c.green(`✔ acked ${r.id}`));
+        process.exit(0);
+      }
+
+      fail(`unknown brain subcommand '${sub}' (status | plug | opt-out | check | outbox)`);
     }
 
     if (cmd === 'agents') {
