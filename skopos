@@ -116,6 +116,10 @@ function agentLines(a) {
   ];
 }
 
+function skillGroupLine(g) {
+  return `    ${c.cyan(g.origin)} ${c.dim(`(${g.names.length})`)}: ${g.names.join(', ')}`;
+}
+
 function reportInstall(r, cmd) {
   const label = { install: 'install', update: 'update' }[cmd] || r.mode;
   const statusText = r.dryRun
@@ -130,7 +134,8 @@ function reportInstall(r, cmd) {
 
   if (r.detected.length) lines.push(fmt.keyValue('detected', `${r.detected.join(', ')} → targets enabled (persisted to config)`));
   lines.push(fmt.keyValue('targets', r.targets.join(', ') || 'none'));
-  lines.push(fmt.keyValue('skills', `${r.skills.length} → ~/.agents/skills (${r.skills.join(', ') || '-'})`));
+  lines.push(fmt.keyValue('skills', `${r.skills.length} → ~/.agents/skills${r.skills.length ? '' : ' (-)'}`));
+  for (const g of r.skillsBySource || []) lines.push(skillGroupLine(g));
   lines.push(fmt.keyValue('templates', `${r.templates.length} → ~/.agents/templates (${r.templates.join(', ') || '-'})`));
   const skippedAgents = Object.entries(r.agentsSkipped || {});
   const perTarget = skippedAgents.length ? 'planned' : 'per target';
@@ -222,7 +227,8 @@ function main() {
       lines.push(fmt.keyValue('installed', installedTag));
       lines.push(fmt.keyValue('config', s.configExists ? configLib.configPath(env) : 'not written yet (run the skopos-setup interview)'));
       lines.push(fmt.keyValue('targets', s.targets.join(', ') || 'none'));
-      lines.push(fmt.keyValue('skills', s.skills.join(', ') || 'none'));
+      lines.push(fmt.keyValue('skills', s.skills.length ? `${s.skills.length} (by source)` : 'none'));
+      for (const g of s.skillsBySource) lines.push(skillGroupLine(g));
       lines.push(fmt.keyValue('templates', s.templates.join(', ') || 'none'));
       lines.push(fmt.keyValue('agents', s.agents.join(', ') || 'none'));
 
@@ -440,6 +446,7 @@ function main() {
             lines.push(`  ${c.cyan(s.name)}`);
             lines.push(`    url: ${s.url}`);
             lines.push(`    ref: ${s.ref || 'HEAD'}`);
+            lines.push(`    skills: ${Array.isArray(s.skillsPaths) ? s.skillsPaths.join(', ') : 'skills/ (root)'}`);
             lines.push(`    status: ${statusStr}`);
             lines.push('');
           }
