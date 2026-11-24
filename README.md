@@ -206,6 +206,18 @@ git clone <org-fork> && cd skopos && ./skopos install
 [docs/enterprise.md](docs/enterprise.md). Sources are cloned shallow, pinned
 by SHA in the lock, and take precedence over the built-in catalog.
 
+Repos that keep skills somewhere other than a root `skills/` — such as
+[adobe/skills](https://github.com/adobe/skills), which nests them under
+`plugins/<product>/…/skills/` — opt in with `skillsPaths`:
+
+```json
+{ "name": "adobe-skills", "url": "https://github.com/adobe/skills.git", "ref": "main",
+  "skillsPaths": ["plugins/aem/**/skills", "plugins/app-builder/skills"] }
+```
+
+`skopos update` warns when a synced source contributes nothing, and
+`skopos status` lists every skill under the source it came from.
+
 ## Design
 
 - **Determinism boundary** (inherited from engsys): the installer owns

@@ -29,6 +29,61 @@ acme-skopos-source/
 └── instructions/*.md         # optional sections appended to the managed block
 ```
 
+### Nested skills (`skillsPaths`)
+
+By default skills are read only from `skills/<name>/SKILL.md` at the source
+root. A repo that keeps them elsewhere — [adobe/skills](https://github.com/adobe/skills)
+nests ~200 under `plugins/<product>/[<sub>/]skills/<name>/SKILL.md` — opts in
+on its config entry:
+
+```json
+{
+  "name": "adobe-skills",
+  "url": "https://github.com/adobe/skills.git",
+  "ref": "main",
+  "skillsPaths": ["plugins/aem/**/skills", "plugins/app-builder/skills"]
+}
+```
+
+Each entry names directories that *contain* skill directories, the role the
+root `skills/` plays by default. Every `<match>/<name>/SKILL.md` is rendered to
+`~/.agents/skills/<name>/` as a full directory (references, sub-folders and
+all). With `skillsPaths` set, the root `skills/` is **not** read unless listed
+(add `"skills"`); `agents/`, `templates/` and `instructions/` are unaffected.
+
+Pattern syntax, always forward slashes and relative to the source root:
+
+| Token | Matches |
+|---|---|
+| `*` | any characters within one path segment |
+| `?` | one character within one path segment |
+| `**` | zero or more whole segments (`plugins/aem/**/skills` matches `plugins/aem/skills` and `plugins/aem/a/b/skills`) |
+
+Wildcards never match dot-directories (`.git`, `.github`, …), symlinked
+directories are never followed, and every match must resolve inside the
+checkout. Discovery is a read-only directory walk — nothing in a source is
+executed, and it runs at render time against the synced checkout, so `update`
+stays offline and deterministic.
+
+`skopos config validate` rejects a `skillsPaths` that isn't a non-empty array
+of strings, or that holds an absolute path, a backslash, or a `..` segment.
+A pattern that matches no skill is a warning.
+
+**Duplicate names inside one source** are resolved by sorted relative path
+(code-point order, the same on every OS): the first wins and each later one is
+skipped with a warning naming both paths. Pattern order does not matter. For
+adobe/skills, `plugins/aem/6.5-lts/…` sorts before `plugins/aem/cloud-service/…`,
+so where both define a skill the 6.5 LTS one is kept. To prefer Cloud
+Service, narrow the patterns (e.g. list `plugins/aem/cloud-service/skills` and
+the `edge-delivery-services*` paths instead of `plugins/aem/**/skills`).
+Collisions *between* sources follow the normal precedence rules below.
+
+### Empty sources
+
+A synced source that contributes no skills, agents or templates triggers a
+warning on `update` and `status` (a source laid out differently than expected
+used to be a silent no-op).
+
 ### skopos.source.json
 
 ```json
